@@ -34,7 +34,7 @@ star.plot()
 ```
 
 <p align="center" style="margin-bottom:-50px">
-    <img src="docs/_static/example_star.png" width="450">
+    <img src="docs/_static/example_star.png" width="500">
 </p>
 
 ```python
@@ -49,7 +49,7 @@ plt.ylabel("diff. flux")
 ```
 
 <p align="center" style="margin-bottom:-50px">
-    <img src="docs/_static/example_lc.png" width="450">
+    <img src="docs/_static/example_lc.png" width="550">
 </p>
 
 
