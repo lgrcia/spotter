@@ -20,36 +20,40 @@
 ```python
 import numpy as np
 from spotter import Star, butterfly
+import matplotlib.pyplot as plt
 
 star = Star(u=[0.1, 0.2], N=128)
 
 # spots properties
-n = 100
+n = 200
+np.random.seed(42)
 theta, phi = butterfly(0.25, 0.08, n)
 radii = np.random.uniform(0.01, 0.1, n)
 contrast = 0.1
 
+# add spots
 star.add_spot(theta, phi, radii, contrast)
-star.plot()
-```
 
-<p align="center" style="margin-bottom:-50px">
-    <img src="docs/_static/example_star.png" width="500">
-</p>
-
-```python
-import matplotlib.pyplot as plt
-
+# compute light curve
 phase = np.linspace(0, 4 * np.pi, 200)
 flux = star.flux(phase)
+```
 
+### Plotting
+
+```python
+plt.figure(figsize=(9, 3))
+plt.subplot(1, 5, (1, 2))
+star.plot()
+
+plt.subplot(1, 5, (3, 5))
 plt.plot(phase, flux, c="k")
 plt.xlabel("phase")
 plt.ylabel("diff. flux")
+
 ```
 
 <p align="center" style="margin-bottom:-50px">
-    <img src="docs/_static/example_lc.png" width="600">
+    <img src="docs/_static/example_star.png" width="700">
 </p>
-
 
