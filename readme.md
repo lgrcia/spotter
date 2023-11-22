@@ -1,6 +1,6 @@
 # spotter
 
-<p align="center">
+<!-- <p align="center">
   Stellar contamination estimates from rotational light curves
   <br>
   <p align="center">
@@ -11,7 +11,7 @@
       <img src="https://img.shields.io/badge/license-MIT-lightgray.svg?style=flat" alt="license"/>
     </a>
   </p>
-</p>
+</p> -->
 
 *spotter* is a Python package to estimate transmission spectra stellar contamination from stellar rotational light curves.
 
