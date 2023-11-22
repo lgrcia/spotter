@@ -15,6 +15,19 @@
 
 *spotter* is a Python package to estimate transmission spectra stellar contamination from stellar rotational light curves.
 
+## Installation
+
+For now only locally with
+
+```
+pip install -e spotter
+```
+
+with *spotter* cloned using
+```
+git clone https://github.com/lgrcia/spotter
+```
+
 ## Example
 
 ```python
