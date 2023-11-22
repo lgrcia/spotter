@@ -54,6 +54,6 @@ plt.ylabel("diff. flux")
 ```
 
 <p align="center" style="margin-bottom:-50px">
-    <img src="docs/_static/example_star.png" width="700">
+    <img src="docs/_static/example_star.png" width="100%">
 </p>
 
