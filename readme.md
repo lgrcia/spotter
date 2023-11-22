@@ -5,7 +5,7 @@
   <br>
   <p align="center">
     <a href="https://github.com/lgrcia/spotter">
-      <img src="https://img.shields.io/badge/github-lgrcia/spotter-pink.svg?style=flat" alt="github"/>
+      <img src="https://img.shields.io/badge/github-lgrcia/spotter-indianred.svg?style=flat" alt="github"/>
     </a>
     <a href="LICENCE">
       <img src="https://img.shields.io/badge/license-MIT-lightgray.svg?style=flat" alt="license"/>
