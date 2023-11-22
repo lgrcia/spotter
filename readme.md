@@ -49,7 +49,7 @@ plt.ylabel("diff. flux")
 ```
 
 <p align="center" style="margin-bottom:-50px">
-    <img src="docs/_static/example_lc.png" width="550">
+    <img src="docs/_static/example_lc.png" width="600">
 </p>
 
 
