@@ -3,6 +3,17 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
+def _wrap(*args):
+    n = len(args)
+    signature = ",".join(["()"] * n)
+    signature = f"{signature}->{signature}"
+    new_args = np.vectorize(lambda *args: args)(*args)
+    if new_args[0].shape == ():
+        return [np.array([n]) for n in new_args]
+    else:
+        return new_args
+
+
 class Star:
     def __init__(self, u=None, N=64):
         self.N = N
@@ -33,18 +44,28 @@ class Star:
         return mask * self._ld(phase)
 
     def add_spot(self, theta, phi, radius, contrast):
-        @np.vectorize(signature="(),(),(),()->(),(),(),()")
-        def foo(a, b, c, d):
-            return a, b, c, d
-
-        it = foo(theta, phi, radius, contrast)
-
-        if it[0].shape == ():
-            it = [[i] for i in it]
-
-        for t, p, r, c in zip(*it):
+        for t, p, r, c in zip(*_wrap(theta, phi, radius, contrast)):
             idxs = hp.query_disc(self.N, hp.ang2vec(t, p), r)
-            self._m[idxs] = 1 - c
+            self._m[idxs] = 1 - c if c < 1 else c
+
+    def add_faculae(self, theta, phi, radius_in, radius_out, contrast):
+        for t, p, ri, ro, c in zip(*_wrap(theta, phi, radius_in, radius_out, contrast)):
+            inner_idxs = hp.query_disc(self.N, hp.ang2vec(t, p), ri)
+            outer_idxs = hp.query_disc(self.N, hp.ang2vec(t, p), ro)
+            idxs = np.setdiff1d(outer_idxs, inner_idxs)
+            self._m[idxs] = 1 - c if c < 1 else c
+
+    def add_spot_faculae(
+        self, theta, phi, radius_in, radius_out, contrast_spot, contrast_faculae
+    ):
+        for t, p, ri, ro, cs, cf in zip(
+            *_wrap(theta, phi, radius_in, radius_out, contrast_spot, contrast_faculae)
+        ):
+            inner_idxs = hp.query_disc(self.N, hp.ang2vec(t, p), ri)
+            outer_idxs = hp.query_disc(self.N, hp.ang2vec(t, p), ro)
+            facuale_idxs = np.setdiff1d(outer_idxs, inner_idxs)
+            self._m[facuale_idxs] = 1 - cf if cf < 1 else cf
+            self._m[inner_idxs] = 1 - cs if cs < 1 else cs
 
     def flux(self, phase=0):
         def _flux(phase):
