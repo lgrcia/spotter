@@ -37,7 +37,12 @@ class Star:
         def foo(a, b, c, d):
             return a, b, c, d
 
-        for t, p, r, c in zip(*foo(theta, phi, radius, contrast)):
+        it = foo(theta, phi, radius, contrast)
+
+        if it[0].shape == ():
+            it = [[i] for i in it]
+
+        for t, p, r, c in zip(*it):
             idxs = hp.query_disc(self.N, hp.ang2vec(t, p), r)
             self._m[idxs] = 1 - c
 
@@ -51,7 +56,7 @@ class Star:
     def m(self, phase=0):
         return self._m * self._get_mask(phase)
 
-    def plot(self, phase=0, grid=False, return_img=False, **kwargs):
+    def show(self, phase=0, grid=False, return_img=False, **kwargs):
         kwargs.setdefault("cmap", "magma")
         rotated_m = hp.Rotator(rot=[phase, 0], deg=False).rotate_map_pixel(self._m)
         projected_map = hp.orthview(
