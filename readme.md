@@ -57,7 +57,7 @@ flux = star.flux(phase)
 ```python
 plt.figure(figsize=(9, 3))
 plt.subplot(1, 5, (1, 2))
-star.plot()
+star.show()
 
 plt.subplot(1, 5, (3, 5))
 plt.plot(phase, flux, c="k")
