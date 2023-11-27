@@ -30,6 +30,9 @@ git clone https://github.com/lgrcia/spotter
 
 ## Example
 
+This is not the intended use of the package but here a demo of its current features:
+
+
 ```python
 import numpy as np
 from spotter import Star, butterfly
