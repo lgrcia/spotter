@@ -7,3 +7,12 @@ def butterfly(latitudes, latitude_sigma, n=1):
     )
     phi = np.random.uniform(0, 2 * np.pi, n)
     return theta, phi
+
+
+def uniform(n=1):
+    # Latitude
+    theta = np.pi / 2 - np.arcsin(np.random.uniform(-1, 1, n))
+    # Longitude
+    phi = np.random.uniform(0, 2 * np.pi, n)
+
+    return theta, phi

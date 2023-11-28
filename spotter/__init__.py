@@ -1,2 +1,2 @@
-from spotter.distributions import butterfly
+from spotter.distributions import butterfly, uniform
 from spotter.star import Star
