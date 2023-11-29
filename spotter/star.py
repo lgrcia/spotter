@@ -52,8 +52,8 @@ class Star:
         self._sin_phi = np.sin(self._phis)
 
         # these two maps are subject to different limb laws
-        self._spot_map = None
-        self._faculae_map = None
+        self.map_spot = None
+        self.map_faculae = None
         self.clear_surface()
 
         self._cached_masks = None
@@ -68,20 +68,20 @@ class Star:
         return self._sin_phi * np.cos(self._thetas - phase)
 
     def clear_surface(self):
-        self._spot_map = np.zeros(self.n)
-        self._faculae_map = np.zeros(self.n)
+        self.map_spot = np.zeros(self.n)
+        self.map_faculae = np.zeros(self.n)
 
     def add_spot(self, theta, phi, radius, contrast):
         for t, p, r, c in zip(*_wrap(theta, phi, radius, contrast)):
             idxs = hp.query_disc(self.N, hp.ang2vec(t, p), r)
-            self._spot_map[idxs] = c
+            self.map_spot[idxs] = c
 
     def add_faculae(self, theta, phi, radius_in, radius_out, contrast):
         for t, p, ri, ro, c in zip(*_wrap(theta, phi, radius_in, radius_out, contrast)):
             inner_idxs = hp.query_disc(self.N, hp.ang2vec(t, p), ri)
             outer_idxs = hp.query_disc(self.N, hp.ang2vec(t, p), ro)
             idxs = np.setdiff1d(outer_idxs, inner_idxs)
-            self._faculae_map[idxs] = c
+            self.map_faculae[idxs] = c
 
     def add_spot_faculae(
         self, theta, phi, radius_in, radius_out, contrast_spot, contrast_faculae
@@ -92,33 +92,37 @@ class Star:
             inner_idxs = hp.query_disc(self.N, hp.ang2vec(t, p), ri)
             outer_idxs = hp.query_disc(self.N, hp.ang2vec(t, p), ro)
             facuale_idxs = np.setdiff1d(outer_idxs, inner_idxs)
-            self._faculae_map[facuale_idxs] = cf
-            self._spot_map[inner_idxs] = cs
+            self.map_faculae[facuale_idxs] = cf
+            self.map_spot[inner_idxs] = cs
 
-    def flux(self, phases):
+    def cached_flux(self, phases):
         mask = self.hemisphere_mask(phases)
         limb_darkening = self.poly_lim_dark(self.u, phases)
-        # spot contribution
-        m = (1 - self._spot_map) * mask * limb_darkening
-        # faculae contribution will have a different limb darkening
-        m += self._faculae_map * mask * limb_darkening
-        # and another normalization will be needed
-        return m.sum(1) / (mask * limb_darkening).sum(1)
+
+        @jax.jit
+        def flux(spot_map):
+            m = (1 - spot_map) * mask * limb_darkening
+            return m.sum(1) / (mask * limb_darkening).sum(1)
+
+        return flux
+
+    def flux(self, phases):
+        return self.cached_flux(phases)(self.map_spot)
 
     def m(self, phase=0):
         mask = self._get_mask(phase)
         limb_darkening = self._ld(phase)
         # spot contribution
-        m = 1 - self._spot_map * mask * limb_darkening
+        m = 1 - self.map_spot * mask * limb_darkening
         # faculae contribution, with same ld for now (TODO)
-        m += self._faculae_map * mask * limb_darkening
+        m += self.map_faculae * mask * limb_darkening
         return m
 
     def show(self, phase=0, grid=False, return_img=False, **kwargs):
         kwargs.setdefault("cmap", "magma")
         # both spot and faculae with same ld for now (TODO)
         rotated_m = hp.Rotator(rot=[phase, 0], deg=False).rotate_map_pixel(
-            (1 - self._spot_map) + self._faculae_map
+            (1 - self.map_spot) + self.map_faculae
         )
         projected_map = hp.orthview(
             rotated_m * self.poly_lim_dark(self.u, np.array([phase]))[0],
@@ -155,7 +159,7 @@ class Star:
             full star or disk covering fraction
         """
         if phase is None:
-            return np.sum(self._spot_map >= vmin) / self.n
+            return np.sum(self.map_spot >= vmin) / self.n
         else:
             mask = self._get_mask(phase)
-            return np.sum(self._spot_map[mask] >= vmin) / mask.sum()
+            return np.sum(self.map_spot[mask] >= vmin) / mask.sum()
