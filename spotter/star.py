@@ -1,6 +1,10 @@
 import healpy as hp
+import jax
+import jax.numpy as jnp
 import matplotlib.pyplot as plt
 import numpy as np
+
+jax.config.update("jax_enable_x64", True)
 
 
 def _wrap(*args):
@@ -14,6 +18,30 @@ def _wrap(*args):
         return new_args
 
 
+def hemisphere_mask_function(thetas):
+    @jax.jit
+    def mask(phase):
+        a = (phase + np.pi / 2) % (2 * np.pi)
+        b = (phase - np.pi / 2) % (2 * np.pi)
+        mask_1 = jnp.logical_and((thetas < a), (thetas > b))
+        mask_2 = jnp.logical_or((thetas > b), (thetas < a))
+        cond1 = a > phase % (2 * jnp.pi)
+        cond2 = b < phase % (2 * jnp.pi)
+        cond = cond1 * cond2
+        return jnp.where(cond, mask_1, mask_2)
+
+    return mask
+
+
+def polynomial_limb_darkening(u):
+    @jax.jit
+    def ld(z):
+        terms = jnp.array([u * (1 - z) ** (n + 1) for n, u in enumerate(u)])
+        return 1 - jnp.sum(terms, 0)
+
+    return ld
+
+
 class Star:
     def __init__(self, u=None, N=64):
         self.N = N
@@ -22,28 +50,18 @@ class Star:
         self._phis, self._thetas = hp.pix2ang(self.N, np.arange(self.n))
         self._sin_phi = np.sin(self._phis)
 
+        # these two maps are subject to different limb laws
         self._spot_map = np.zeros(self.n)
         self._faculae_map = np.zeros(self.n)
 
+        self._cached_masks = None
+        self._cached_ld = None
+
+        self.hemisphere_mask = None
+        self.polynomial_limb_darkening = None
+
     def _z(self, phase=0):
         return self._sin_phi * np.cos(self._thetas - phase)
-
-    def _ld(self, phase=0):
-        if self.u is None:
-            return 1
-        else:
-            z = self._z(phase)
-            return 1 - np.sum([u * (1 - z) ** (n + 1) for n, u in enumerate(self.u)], 0)
-
-    def _get_mask(self, phase=0):
-        a = (phase + np.pi / 2) % (2 * np.pi)
-        b = (phase - np.pi / 2) % (2 * np.pi)
-        if a > phase % (2 * np.pi) and b < phase % (2 * np.pi):
-            mask = (self._thetas < a) & (self._thetas > b)
-        else:
-            mask = (self._thetas > b) | (self._thetas < a)
-
-        return mask
 
     def add_spot(self, theta, phi, radius, contrast):
         for t, p, r, c in zip(*_wrap(theta, phi, radius, contrast)):
@@ -71,11 +89,15 @@ class Star:
 
     def flux(self, phase=0):
         def _flux(phase):
-            mask = self._get_mask(phase)
-            limb_darkening = self._ld(phase)
+            self.hemisphere_mask = hemisphere_mask_function(self._thetas)
+            mask = self.hemisphere_mask(phase)
+
+            self.polynomial_limb_darkening = polynomial_limb_darkening(self.u)
+            limb_darkening = self.polynomial_limb_darkening(phase)
             # spot contribution
             m = (1 - self._spot_map) * mask * limb_darkening
-            # facuale contribution will have a different limb darkening
+            # faculae contribution will have a different limb darkening
+            m += self._faculae_map * mask * limb_darkening
             # and another normalization will be needed
             return m.sum() / (mask * limb_darkening).sum()
 
@@ -86,13 +108,15 @@ class Star:
         limb_darkening = self._ld(phase)
         # spot contribution
         m = 1 - self._spot_map * mask * limb_darkening
+        # faculae contribution, with same ld for now (TODO)
+        m += self._faculae_map * mask * limb_darkening
         return m
 
     def show(self, phase=0, grid=False, return_img=False, **kwargs):
         kwargs.setdefault("cmap", "magma")
-        # only spot contribution for now
+        # both spot and faculae with same ld for now (TODO)
         rotated_m = hp.Rotator(rot=[phase, 0], deg=False).rotate_map_pixel(
-            1 - self._spot_map
+            (1 - self._spot_map) + self._faculae_map
         )
         projected_map = hp.orthview(
             rotated_m * self._ld(0), half_sky=True, return_projected_map=True
