@@ -19,7 +19,6 @@ def _wrap(*args):
 
 
 def hemisphere_mask_function(thetas):
-    @jax.jit
     def mask(phase):
         a = (phase + np.pi / 2) % (2 * np.pi)
         b = (phase - np.pi / 2) % (2 * np.pi)
@@ -34,7 +33,6 @@ def hemisphere_mask_function(thetas):
 
 
 def polynomial_limb_darkening(thetas, phis):
-    @jax.jit
     def ld(u, phase):
         z = jnp.sin(phis) * jnp.cos(thetas - phase)
         terms = jnp.array([u * (1 - z) ** (n + 1) for n, u in enumerate(u)])
@@ -107,13 +105,25 @@ class Star:
         return flux
 
     def flux(self, phases):
-        return self.cached_flux(phases)(self.map_spot)
+        mask = np.vectorize(
+            hemisphere_mask_function(self._thetas), signature="()->(n)"
+        )(phases)
+        limb_darkening = np.vectorize(
+            polynomial_limb_darkening(self._thetas, self._phis),
+            signature="()->(n)",
+            excluded={0},
+        )(self.u, phases)
+        m = (1 - self.map_spot) * mask * limb_darkening
+        # faculae contribution, with same ld for now (TODO)
+        m += self.map_faculae * mask * limb_darkening
+
+        return m.sum(1) / (mask * limb_darkening).sum(1)
 
     def m(self, phase=0):
         mask = self._get_mask(phase)
         limb_darkening = self._ld(phase)
         # spot contribution
-        m = 1 - self.map_spot * mask * limb_darkening
+        m = (1 - self.map_spot) * mask * limb_darkening
         # faculae contribution, with same ld for now (TODO)
         m += self.map_faculae * mask * limb_darkening
         return m
