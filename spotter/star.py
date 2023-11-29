@@ -15,7 +15,7 @@ def _wrap(*args):
 
 
 class Star:
-    def __init__(self, u=None, N=64):
+    def __init__(self, u=None, N=64, b=None, r=None):
         self.N = N
         self.u = u
         self.n = hp.nside2npix(self.N)
@@ -24,6 +24,12 @@ class Star:
 
         self._spot_map = np.zeros(self.n)
         self._faculae_map = np.zeros(self.n)
+        # Define transit chord if impact parameter (b) and planet radius (r) provided
+        self._transit_chord_map = np.zeros(self.n)
+        self.b = b
+        self.r = r
+        if b is not None and r is not None:
+            self.define_transit_chord(b, r)
 
     def _z(self, phase=0):
         return self._sin_phi * np.cos(self._thetas - phase)
@@ -69,6 +75,14 @@ class Star:
             self._faculae_map[facuale_idxs] = cf
             self._spot_map[inner_idxs] = cs
 
+    def define_transit_chord(self, b, r):
+        self.b = b
+        self.r = r
+        theta1 = np.arccos(b + r)
+        theta2 = np.arccos(b - r)
+        idx = hp.query_strip(self.N, theta1, theta2)
+        self._transit_chord_map[idx] = 1
+
     def flux(self, phase=0):
         def _flux(phase):
             mask = self._get_mask(phase)
@@ -88,7 +102,7 @@ class Star:
         m = 1 - self._spot_map * mask * limb_darkening
         return m
 
-    def show(self, phase=0, grid=False, return_img=False, **kwargs):
+    def show(self, phase=0, grid=False, return_img=False, transit_chord=True, **kwargs):
         kwargs.setdefault("cmap", "magma")
         # only spot contribution for now
         rotated_m = hp.Rotator(rot=[phase, 0], deg=False).rotate_map_pixel(
@@ -103,9 +117,15 @@ class Star:
         else:
             plt.axis(False)
             plt.imshow(projected_map, **kwargs)
+            if transit_chord:
+                plt.plot()
 
     def covering_fraction(
-        self, phase: float = None, vmin: float = 0.01, vmax: float = 1.0
+        self,
+        phase: float = None,
+        vmin: float = 0.01,
+        vmax: float = 1.0,
+        transit_chord=False,
     ):
         """Return the covering fraction of active regions
 
@@ -120,14 +140,28 @@ class Star:
             minimum contrast value for spots, by default 0.01
         vmax : float, optional
             minimum contrast value for faculae, by default 1.0
+        transit_chord : bool, optional
+            calculate the covering fraction within the transit chord
 
         Returns
         -------
         float
             full star or disk covering fraction
         """
-        if phase is None:
-            return np.sum(self._spot_map >= vmin) / self.n
-        else:
-            mask = self._get_mask(phase)
-            return np.sum(self._spot_map[mask] >= vmin) / mask.sum()
+        if not transit_chord:
+            if phase is None:
+                return np.sum(self._spot_map >= vmin) / self.n
+            else:
+                mask = self._get_mask(phase)
+                return np.sum(self._spot_map[mask] >= vmin) / mask.sum()
+        elif transit_chord:
+            in_chord = self._transit_chord_map
+            is_spotted = self._spot_map >= vmin
+            if phase is None:
+                return np.logical_and(in_chord, is_spotted).sum() / in_chord.sum()
+            else:
+                mask = self._get_mask(phase)
+                return (
+                    np.logical_and(in_chord, is_spotted)[mask].sum()
+                    / in_chord[mask].sum()
+                )
