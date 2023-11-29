@@ -25,17 +25,22 @@ class Star:
         self._spot_map = np.zeros(self.n)
         self._faculae_map = np.zeros(self.n)
 
+        # cached
+        self._cached_hemisphere_masks = None
+        self._cached_polynomial_limb_darkening = None
+        self._cached_phases = None
+
     def _z(self, phase=0):
         return self._sin_phi * np.cos(self._thetas - phase)
 
-    def _ld(self, phase=0):
+    def _polynomial_limb_darkening(self, phase=0):
         if self.u is None:
             return 1
         else:
             z = self._z(phase)
             return 1 - np.sum([u * (1 - z) ** (n + 1) for n, u in enumerate(self.u)], 0)
 
-    def _get_mask(self, phase=0):
+    def _hemisphere_mask(self, phase=0):
         a = (phase + np.pi / 2) % (2 * np.pi)
         b = (phase - np.pi / 2) % (2 * np.pi)
         if a > phase % (2 * np.pi) and b < phase % (2 * np.pi):
@@ -69,10 +74,27 @@ class Star:
             self._faculae_map[facuale_idxs] = cf
             self._spot_map[inner_idxs] = cs
 
-    def flux(self, phase=0):
+    def flux(self, phases, cached=True):
+        _skip_compute = True
+        if cached:
+            if self._cached_phases is None:
+                self._cached_phases = phases
+            if len(phases) != len(self._cached_phases):
+                _skip_compute = False
+            elif np.any(phases != self._cached_phases):
+                _skip_compute = False
+
+        if _skip_compute:
+            self._cached_hemisphere_masks = np.array(
+                [self._hemisphere_mask(p) for p in phases]
+            )
+            self._cached_polynomial_limb_darkening = np.array(
+                [self._polynomial_limb_darkening(p) for p in phases]
+            )
+
         def _flux(phase):
-            mask = self._get_mask(phase)
-            limb_darkening = self._ld(phase)
+            mask = self._hemisphere_mask(phase)
+            limb_darkening = self._polynomial_limb_darkening(phase)
             # spot contribution
             m = (1 - self._spot_map) * mask * limb_darkening
             # facuale contribution will have a different limb darkening
@@ -82,8 +104,8 @@ class Star:
         return np.vectorize(_flux)(phase)
 
     def m(self, phase=0):
-        mask = self._get_mask(phase)
-        limb_darkening = self._ld(phase)
+        mask = self._hemisphere_mask(phase)
+        limb_darkening = self._polynomial_limb_darkening(phase)
         # spot contribution
         m = 1 - self._spot_map * mask * limb_darkening
         return m
@@ -95,7 +117,9 @@ class Star:
             1 - self._spot_map
         )
         projected_map = hp.orthview(
-            rotated_m * self._ld(0), half_sky=True, return_projected_map=True
+            rotated_m * self._polynomial_limb_darkening(0),
+            half_sky=True,
+            return_projected_map=True,
         )
         plt.close()
         if return_img:
@@ -129,5 +153,5 @@ class Star:
         if phase is None:
             return np.sum(self._spot_map >= vmin) / self.n
         else:
-            mask = self._get_mask(phase)
+            mask = self._hemisphere_mask(phase)
             return np.sum(self._spot_map[mask] >= vmin) / mask.sum()
