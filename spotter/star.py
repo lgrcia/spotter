@@ -35,6 +35,10 @@ class Star:
             z = self._z(phase)
             return 1 - np.sum([u * (1 - z) ** (n + 1) for n, u in enumerate(self.u)], 0)
 
+    @property
+    def resolution(self):
+        return hp.nside2resol(self.N)
+
     def _get_mask(self, phase=0):
         a = (phase + np.pi / 2) % (2 * np.pi)
         b = (phase - np.pi / 2) % (2 * np.pi)
