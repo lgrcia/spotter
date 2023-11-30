@@ -97,7 +97,7 @@ class Star:
             self.map_faculae[facuale_idxs] = cf
             self.map_spot[inner_idxs] = cs
 
-    def cached_flux(self, phases):
+    def jax_flux(self, phases):
         mask = self.hemisphere_mask(phases)
         limb_darkening = self.poly_lim_dark(self.u, phases)
 
@@ -107,6 +107,17 @@ class Star:
             return m.sum(1) / (mask * limb_darkening).sum(1)
 
         return flux
+
+    def jax_amplitude(self, resolution=3):
+        hp_resolution = hp.nside2resol(self.N) * resolution
+        phases = np.arange(0, 2 * np.pi, hp_resolution)
+        flux = self.jax_flux(phases)
+
+        def amplitude(spot_map):
+            f = flux(spot_map)
+            return jnp.max(f) - jnp.min(f)
+
+        return amplitude
 
     def flux(self, phases):
         mask = np.vectorize(
