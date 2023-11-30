@@ -69,6 +69,10 @@ class Star:
         self.map_spot = np.zeros(self.n)
         self.map_faculae = np.zeros(self.n)
 
+    @property
+    def resolution(self):
+        return hp.nside2resol(self.N)
+
     def add_spot(self, theta, phi, radius, contrast):
         for t, p, r, c in zip(*_wrap(theta, phi, radius, contrast)):
             idxs = hp.query_disc(self.N, hp.ang2vec(t, p), r)
