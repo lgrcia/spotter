@@ -41,6 +41,37 @@ def polynomial_limb_darkening(thetas, phis):
     return ld
 
 
+# For the record, this is not faster than the C healpy wrapper
+# i.e. 100x slower than using hp.query_disc. But if we ever need
+# full jax compatibility, this is the way to go.
+def query_idxs_function(thetas, phis):
+    @jax.jit
+    def query_idxs(theta, phi, radius):
+        # https://en.wikipedia.org/wiki/Great-circle_distance
+        # Vincenty formula
+        p1 = phis - jnp.pi / 2
+        p2 = theta - jnp.pi / 2
+
+        t1 = thetas
+        t2 = phi
+        dl = jnp.abs((t1 - t2))
+
+        sp1 = jnp.sin(p1)
+        sp2 = jnp.sin(p2)
+        cp1 = jnp.cos(p1)
+        cp2 = jnp.cos(p2)
+        cdl = jnp.cos(dl)
+        sdl = jnp.sin(dl)
+
+        a = (cp2 * sdl) ** 2 + (cp1 * sp2 - sp1 * cp2 * cdl) ** 2
+        b = sp1 * sp2 + cp1 * cp2 * cdl
+        d = jnp.arctan2(jnp.sqrt(a), b)
+
+        return jnp.array(d <= radius)
+
+    return query_idxs
+
+
 class Star:
     def __init__(self, u=None, N=64, b=None, r=None):
         self.N = N
@@ -128,6 +159,7 @@ class Star:
         phases = np.arange(0, 2 * np.pi, hp_resolution)
         flux = self.jax_flux(phases)
 
+        @jax.jit
         def amplitude(spot_map):
             f = flux(spot_map)
             return jnp.max(f) - jnp.min(f)
@@ -208,13 +240,13 @@ class Star:
         """
         if not transit_chord:
             if phase is None:
-                return np.sum(self._spot_map >= vmin) / self.n
+                return np.sum(self.map_spot >= vmin) / self.n
             else:
                 mask = self._get_mask(phase)
-                return np.sum(self._spot_map[mask] >= vmin) / mask.sum()
+                return np.sum(self.map_spot[mask] >= vmin) / mask.sum()
         elif transit_chord:
             in_chord = self._transit_chord_map
-            is_spotted = self._spot_map >= vmin
+            is_spotted = self.map_spot >= vmin
             if phase is None:
                 return np.logical_and(in_chord, is_spotted).sum() / in_chord.sum()
             else:
