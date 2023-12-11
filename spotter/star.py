@@ -75,6 +75,9 @@ def query_idxs_function(thetas, phis):
 class Star:
     def __init__(self, u=None, N=64, b=None, r=None):
         self.N = N
+        if u is None:
+            u = []
+
         self.u = u
         self.n = hp.nside2npix(self.N)
         self._phis, self._thetas = hp.pix2ang(self.N, np.arange(self.n))
@@ -85,16 +88,13 @@ class Star:
         self.map_faculae = None
         self.clear_surface()
 
-        self._cached_masks = None
-        self._cached_ld = None
-
         self.hemisphere_mask = jax.vmap(hemisphere_mask_function(self._thetas))
         self.poly_lim_dark = jax.vmap(
             polynomial_limb_darkening(self._thetas, self._phis), in_axes=(None, 0)
         )
 
         # Define transit chord if impact parameter (b) and planet radius (r) provided
-        self._transit_chord_map = np.zeros(self.n)
+        self._map_chord = np.zeros(self.n)
         self.b = b
         self.r = r
         if b is not None and r is not None:
@@ -145,7 +145,7 @@ class Star:
         theta1 = np.arccos(b + r)
         theta2 = np.arccos(b - r)
         idx = hp.query_strip(self.N, theta1, theta2)
-        self._transit_chord_map[idx] = 1
+        self._map_chord[idx] = 1
 
     def jax_flux(self, phases):
         mask = self.hemisphere_mask(phases)
@@ -249,7 +249,7 @@ class Star:
                 mask = self._get_mask(phase)
                 return np.sum(self.map_spot[mask] >= vmin) / mask.sum()
         elif transit_chord:
-            in_chord = self._transit_chord_map
+            in_chord = self._map_chord
             is_spotted = self.map_spot >= vmin
             if phase is None:
                 return np.logical_and(in_chord, is_spotted).sum() / in_chord.sum()
