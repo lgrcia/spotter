@@ -6,7 +6,7 @@ from spotter.distributions import butterfly
 from spotter.star import Star
 
 default_latitudes = partial(butterfly, latitudes=0.25, latitudes_sigma=0.08)
-default_distribution = partial(np.random.uniform, 0.01, 0.1)
+default_radii = partial(np.random.uniform, 0.01, 0.1)
 
 
 def estimate_spot_coverage(
@@ -14,7 +14,7 @@ def estimate_spot_coverage(
     amplitude: float,
     contrast: float,
     draw_theta_phi: callable = default_latitudes,
-    draw_radii: callable = default_distribution,
+    draw_radii: callable = default_radii,
     resolution: float = 10.0,
     spot_step_size: int = 1,
     n_iter: int = 1,
