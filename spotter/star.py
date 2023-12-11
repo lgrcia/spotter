@@ -95,6 +95,9 @@ class Star:
 
         # Define transit chord if impact parameter (b) and planet radius (r) provided
         self._map_chord = np.zeros(self.n)
+        assert (b is None and r is None) or (
+            b is not None and r is not None
+        ), "Either both b and r must be provided or neither."
         self.b = b
         self.r = r
         if b is not None and r is not None:
@@ -106,6 +109,10 @@ class Star:
     def clear_surface(self):
         self.map_spot = np.zeros(self.n)
         self.map_faculae = np.zeros(self.n)
+
+    @property
+    def has_chord(self):
+        return self.r is not None
 
     @property
     def resolution(self):
@@ -194,12 +201,49 @@ class Star:
         m += self.map_faculae * mask * limb_darkening
         return m
 
-    def show(self, phase=0, grid=False, return_img=False, transit_chord=True, **kwargs):
+    def show(
+        self,
+        phase: float = 0,
+        grid: bool = False,
+        return_img: bool = False,
+        chord: float = None,
+        **kwargs,
+    ):
+        """Show the stellar disk at a given rotation phase
+
+        Parameters
+        ----------
+        phase : float, optional
+            The rotation phase of the stellar disk. Defaults to 0.
+        grid : bool, optional
+            Whether to display a grid on the plot. Defaults to False.
+        return_img : bool, optional
+            Whether to return the projected map as an image. Defaults to False.
+        chord : float, optional
+            An additional contrast applied on the map to visualize the
+            position of the transit chord. Defaults to None.
+
+        Returns
+        -------
+        numpy.ndarray or None
+            If `return_img` is True, returns the projected map as a numpy array.
+            Otherwise, returns None.
+
+        Examples
+        --------
+        >>> star = Star(u=[0.1, 0.2], N=2**7, b=-0.7, r=0.06)
+        >>> star.show(chord=0.2)
+        """
         kwargs.setdefault("cmap", "magma")
         # both spot and faculae with same ld for now (TODO)
         rotated_m = hp.Rotator(rot=[phase, 0], deg=False).rotate_map_pixel(
             (1 - self.map_spot) + self.map_faculae
         )
+        if self.has_chord and (chord is not None):
+            assert isinstance(chord, float), "chord must be a float (or None)"
+            mask = self._map_chord > 0
+            rotated_m[mask] = rotated_m[mask] * (1 - chord)
+
         projected_map = hp.orthview(
             rotated_m * self.poly_lim_dark(self.u, np.array([phase]))[0],
             half_sky=True,
@@ -211,15 +255,9 @@ class Star:
         else:
             plt.axis(False)
             plt.imshow(projected_map, **kwargs)
-            if transit_chord:
-                plt.plot()
 
     def covering_fraction(
-        self,
-        phase: float = None,
-        vmin: float = 0.01,
-        vmax: float = 1.0,
-        transit_chord=False,
+        self, phase: float = None, vmin: float = 0.01, chord=False, disk=False
     ):
         """Return the covering fraction of active regions
 
@@ -242,13 +280,14 @@ class Star:
         float
             full star or disk covering fraction
         """
-        if not transit_chord:
+        if not chord:
             if phase is None:
                 return np.sum(self.map_spot >= vmin) / self.n
             else:
                 mask = self._get_mask(phase)
                 return np.sum(self.map_spot[mask] >= vmin) / mask.sum()
-        elif transit_chord:
+
+        elif chord:
             in_chord = self._map_chord
             is_spotted = self.map_spot >= vmin
             if phase is None:

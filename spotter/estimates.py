@@ -95,7 +95,7 @@ def estimate_spot_coverage(
                     amp = amplitude_of(n_spot)
 
                 if transit_chord:
-                    f_chords.append(star.covering_fraction(transit_chord=True))
+                    f_chords.append(star.covering_fraction(chord=True))
                 f_disks.append(star.covering_fraction())
                 n_spots.append(n_spot)
                 amps.append(amp)
