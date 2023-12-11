@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def butterfly(latitudes, latitude_sigma, n=1):
+def butterfly(latitudes=0, latitude_sigma=0, n=1):
     theta = np.pi / 2 - (
         np.random.normal(latitudes, latitude_sigma, n) * np.random.choice([-1, 1], n)
     )
