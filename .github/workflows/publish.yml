@@ -1,4 +1,4 @@
-name: prose/publish
+name: spotter/publish
 
 on:
   release:
@@ -19,7 +19,7 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     env:
-      PROJECT_NAME: "Prose"
+      PROJECT_NAME: "spotter"
       PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
 
     steps:
