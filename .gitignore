@@ -59,6 +59,6 @@ dev
 
 ## docs
 docs/_build
-docs/md/generated
+docs/**/generated
 _docs
 **/.ipynb_checkpoints

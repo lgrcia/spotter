@@ -279,6 +279,11 @@ class Star:
         -------
         float
             full star or disk covering fraction
+
+        Examples
+        --------
+        >>> star = Star(u=[0.1, 0.2], N=2**7, b=-0.7, r=0.06)
+        >>> star.covering_fraction()
         """
         if not chord:
             if phase is None:

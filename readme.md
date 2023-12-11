@@ -73,3 +73,7 @@ plt.ylabel("diff. flux")
     <img src="docs/_static/example_star.png" width="100%">
 </p>
 
+### Difference with existing tools
+
+#### StarSim
+- 
