@@ -74,6 +74,20 @@ def query_idxs_function(thetas, phis):
 
 class Star:
     def __init__(self, u=None, N=64, b=None, r=None):
+        """
+        Initialize a Star object.
+
+        Parameters
+        ----------
+        u : list, optional
+            List of limb darkening coefficients. Defaults to None.
+        N : int, optional
+            The resolution parameter for the HEALPix map. Defaults to 64.
+        b : float, optional
+            Impact parameter of the transit chord. Defaults to None.
+        r : float, optional
+            Planet radius. Defaults to None.
+        """
         self.N = N
         if u is None:
             u = []
@@ -104,26 +118,88 @@ class Star:
             self.define_transit_chord(b, r)
 
     def _z(self, phase=0):
+        """
+        Calculate the z-coordinate of the star's surface.
+
+        Parameters
+        ----------
+        phase : float, optional
+            The rotation phase of the star. Defaults to 0.
+
+        Returns
+        -------
+        numpy.ndarray
+            The z-coordinate of the star's surface.
+        """
         return self._sin_phi * np.cos(self._thetas - phase)
 
     def clear_surface(self):
+        """
+        Clear the surface of the star by setting the spot and faculae maps to zero.
+        """
         self.map_spot = np.zeros(self.n)
         self.map_faculae = np.zeros(self.n)
 
     @property
     def has_chord(self):
+        """
+        Check if the star has a transit chord defined.
+
+        Returns
+        -------
+        bool
+            True if the star has a transit chord defined, False otherwise.
+        """
         return self.r is not None
 
     @property
     def resolution(self):
+        """
+        Get the resolution of the star's HEALPix map.
+
+        Returns
+        -------
+        float
+            The resolution of the star's HEALPix map.
+        """
         return hp.nside2resol(self.N)
 
     def add_spot(self, theta, phi, radius, contrast):
+        """
+        Add a spot to the star's surface.
+
+        Parameters
+        ----------
+        theta : float or list
+            The polar angle(s) of the spot(s).
+        phi : float or list
+            The azimuthal angle(s) of the spot(s).
+        radius : float or list
+            The radius(es) of the spot(s).
+        contrast : float or list
+            The contrast(s) of the spot(s).
+        """
         for t, p, r, c in zip(*_wrap(theta, phi, radius, contrast)):
             idxs = hp.query_disc(self.N, hp.ang2vec(t, p), r)
             self.map_spot[idxs] = c
 
     def add_faculae(self, theta, phi, radius_in, radius_out, contrast):
+        """
+        Add faculae to the star's surface.
+
+        Parameters
+        ----------
+        theta : float or list
+            The polar angle(s) of the faculae.
+        phi : float or list
+            The azimuthal angle(s) of the faculae.
+        radius_in : float or list
+            The inner radius(es) of the faculae.
+        radius_out : float or list
+            The outer radius(es) of the faculae.
+        contrast : float or list
+            The contrast(s) of the faculae.
+        """
         for t, p, ri, ro, c in zip(*_wrap(theta, phi, radius_in, radius_out, contrast)):
             inner_idxs = hp.query_disc(self.N, hp.ang2vec(t, p), ri)
             outer_idxs = hp.query_disc(self.N, hp.ang2vec(t, p), ro)
@@ -133,6 +209,24 @@ class Star:
     def add_spot_faculae(
         self, theta, phi, radius_in, radius_out, contrast_spot, contrast_faculae
     ):
+        """
+        Add both spot and faculae to the star's surface.
+
+        Parameters
+        ----------
+        theta : float or list
+            The polar angle(s) of the spot(s) and faculae.
+        phi : float or list
+            The azimuthal angle(s) of the spot(s) and faculae.
+        radius_in : float or list
+            The inner radius(es) of the faculae.
+        radius_out : float or list
+            The outer radius(es) of the faculae.
+        contrast_spot : float or list
+            The contrast(s) of the spot(s).
+        contrast_faculae : float or list
+            The contrast(s) of the faculae.
+        """
         for t, p, ri, ro, cs, cf in zip(
             *_wrap(theta, phi, radius_in, radius_out, contrast_spot, contrast_faculae)
         ):
@@ -142,11 +236,17 @@ class Star:
             self.map_faculae[facuale_idxs] = cf
             self.map_spot[inner_idxs] = cs
 
-    def reset_coverage(self):
-        self._spot_map = np.zeros(self.n)
-        self._faculae_map = np.zeros(self.n)
-
     def define_transit_chord(self, b, r):
+        """
+        Define the transit chord on the star's surface.
+
+        Parameters
+        ----------
+        b : float
+            Impact parameter of the transit chord.
+        r : float
+            Planet radius.
+        """
         self.b = b
         self.r = r
         theta1 = np.arccos(b + r)
@@ -155,6 +255,19 @@ class Star:
         self._map_chord[idx] = 1
 
     def jax_flux(self, phases):
+        """
+        Return a [JAX](https://jax.readthedocs.io/en/latest/) function to compute the star's flux.
+
+        Parameters
+        ----------
+        phases : numpy.ndarray
+            Array of phases at which to calculate the flux.
+
+        Returns
+        -------
+        function
+            A JAX function that calculates the flux of the star at the given phases.
+        """
         mask = self.hemisphere_mask(phases)
         limb_darkening = self.poly_lim_dark(self.u, phases)
 
@@ -166,6 +279,19 @@ class Star:
         return flux
 
     def jax_amplitude(self, resolution=3):
+        """
+        Return a [JAX](https://jax.readthedocs.io) function to compute the star's peak to peak amplitude.
+
+        Parameters
+        ----------
+        resolution : int, optional
+            The resolution parameter for the flux calculation. Defaults to 3.
+
+        Returns
+        -------
+        function
+            A JAX function that calculates the amplitude of the star's peak to peak amplitude.
+        """
         hp_resolution = hp.nside2resol(self.N) * resolution
         phases = np.arange(0, 2 * np.pi, hp_resolution)
         flux = self.jax_flux(phases)
@@ -178,6 +304,19 @@ class Star:
         return amplitude
 
     def flux(self, phases):
+        """
+        Calculate the flux of the star at given phases.
+
+        Parameters
+        ----------
+        phases : numpy.ndarray
+            Array of phases at which to calculate the flux.
+
+        Returns
+        -------
+        numpy.ndarray
+            The flux of the star at the given phases.
+        """
         mask = np.vectorize(
             hemisphere_mask_function(self._thetas), signature="()->(n)"
         )(phases)
@@ -193,11 +332,22 @@ class Star:
         return m.sum(1) / (mask * limb_darkening).sum(1)
 
     def m(self, phase=0):
+        """
+        Return the pixel elements values of the map.
+
+        Parameters
+        ----------
+        phase : float, optional
+            The rotation phase of the star. Defaults to 0.
+
+        Returns
+        -------
+        numpy.ndarray
+            Pixel elements values of the map.
+        """
         mask = self._get_mask(phase)
         limb_darkening = self._ld(phase)
-        # spot contribution
         m = (1 - self.map_spot) * mask * limb_darkening
-        # faculae contribution, with same ld for now (TODO)
         m += self.map_faculae * mask * limb_darkening
         return m
 
@@ -209,7 +359,8 @@ class Star:
         chord: float = None,
         **kwargs,
     ):
-        """Show the stellar disk at a given rotation phase
+        """
+        Show the stellar disk at a given rotation phase.
 
         Parameters
         ----------

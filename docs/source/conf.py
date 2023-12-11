@@ -43,3 +43,4 @@ html_short_title = "spotter"
 html_title = f"{html_short_title}"
 
 html_css_files = ["style.css"]
+myst_url_schemes = ("http", "https")
