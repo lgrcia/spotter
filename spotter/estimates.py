@@ -1,22 +1,24 @@
+from functools import partial
+
 import numpy as np
 
 from spotter.distributions import butterfly
+from spotter.star import Star
+
+default_latitudes = partial(butterfly, latitudes=0.25, latitudes_sigma=0.08)
+default_distribution = partial(np.random.uniform, 0.01, 0.1)
 
 
 def estimate_spot_coverage(
-    star,
-    ref_amp,
-    contrast,
-    spatial_dist="butterfly",
-    latitudes=0.25,
-    latitudes_sigma=0.08,
-    radius_dist="uniform",
-    radius_min=0.01,
-    radius_max=0.1,
-    spot_step_size=1,
-    n_phases=100,
-    n_iter=1,
-    transit_chord=True,
+    star: Star,
+    amplitude: float,
+    contrast: float,
+    draw_theta_phi: callable = default_latitudes,
+    draw_radii: callable = default_distribution,
+    resolution: float = 10.0,
+    spot_step_size: int = 1,
+    n_iter: int = 1,
+    transit_chord: bool = True,
 ):
     """
     Estimates the spot coverage on a stellar surface for a given light curve amplitude.
@@ -25,27 +27,21 @@ def estimate_spot_coverage(
     ----------
     star : `Star`
         The stellar object on which spots are added.
-    ref_amp : float
+    amplitude: float
         The reference amplitude of the light curve to be achieved.
     contrast : float
         The contrast of the spots.
-    spatial_dist : str, optional
-        The spatial distribution of spots, only "butterfly" works for now.
-    latitudes : float, optional
-        Parameter for the butterfly distribution, controlling the latitudes of spots.
-    latitudes_sigma : float, optional
-        Parameter for the butterfly distribution, controlling the latitudinal spread of
-        spots.
-    radius_dist : str, optional
-        The distribution of spot radii, either "uniform" or another custom distribution.
-    radius_min : float, optional
-        Minimum spot radius for uniform distribution.
-    radius_max : float, optional
-        Maximum spot radius for uniform distribution.
+    draw_theta_phi : callable, optional
+        A single `n_spot` argument function that draws the spot latitudes and longitudes. By default,
+        a butterfly distribution with `latitudes=0.25` and `latitudes_sigma=0.08`.
+    draw_radii : callable, optional
+        A single `n_spot` argument function that draws the spot radii. By default, a
+        uniform distribution between 0.01 and 0.1.
+    resolution : float, optional
+        The resolution of the light curve to compute the amplitude. See `Star.jax_amplitude`.
+        By default 10.0.
     spot_step_size : int, optional
         The step size for adjusting the number of spots in each iteration.
-    n_phases : int, optional
-        The number of phases for the light curve computation.
     n_iter : int, optional
         The number of iterations to estimate spot coverage.
     transit_chord : bool, optional
@@ -53,59 +49,50 @@ def estimate_spot_coverage(
 
     Returns
     -------
-    If transit_chord is True:
-        Tuple
-            Tuple containing covering fraction during transit chords, covering fraction
-            over the entire stellar disk, the number of spots, and corresponding light
-            curve amplitudes.
-    If transit_chord is False:
-        Tuple
-            Tuple containing covering fraction over the entire stellar disk, the number
-            of spots, and corresponding light curve amplitudes.
+    Tuple
+        f_disks, n_spots, amps, f_chords
+
+        where:
+        - f_disks: list of covering fractions over the entire stellar disk
+        - n_spots: list of number of spots
+        - amps: list of corresponding light curve amplitudes
+        - f_chords: list of covering fractions over the transit chord (None if `transit_chord=False`)
     """
-    phase = np.linspace(0, 2 * np.pi, n_phases)
-    f_chords = []
+    f_chords = [] if transit_chord else None
     f_disks = []
     n_spots = []
     amps = []
-    for i in range(n_iter):
+
+    _amplitude = star.jax_amplitude(resolution=resolution)
+
+    def amplitude_of(n_spot):
+        star.clear_surface()
+
+        # spots properties
+        theta, phi = draw_theta_phi(n=n_spot)
+        radii = draw_radii(n=n_spot)
+        # add spots
+        star.add_spot(theta, phi, radii, contrast)
+        # compute light curve amplitude
+        amp = _amplitude(star.map_spot)
+
+        return amp
+
+    for _ in range(n_iter):
         n_spot = 1
         amp = 0
-        while amp < ref_amp:
-            star.reset_coverage()
+        while amp < amplitude:
+            amp = amplitude_of(n_spot)
 
-            # spots properties
-            if spatial_dist == "butterfly":
-                theta, phi = butterfly(latitudes, latitudes_sigma, n_spot)
-            if radius_dist == "uniform":
-                radii = np.random.uniform(radius_min, radius_max, n_spot)
-
-            # add spots
-            star.add_spot(theta, phi, radii, contrast)
-
-            # compute light curve amplitude
-            amp = star.flux(phase).ptp()
-            if amp < ref_amp:
+            if amp < amplitude:
                 n_spot += spot_step_size
             else:
                 # Once we cross the threshold, we need to randomly do 1 of 2 things
                 # 1. Accept this spot distribution (which overshoots the ref_amp)
                 # 2. Remove the last added spot (thus undershooting the ref_amp)
                 if np.random.choice([0, 1]):
-                    star.reset_coverage()
                     n_spot -= spot_step_size
-
-                    # spots properties
-                    if spatial_dist == "butterfly":
-                        theta, phi = butterfly(latitudes, latitudes_sigma, n_spot)
-                    if radius_dist == "uniform":
-                        radii = np.random.uniform(radius_min, radius_max, n_spot)
-
-                    # add spots
-                    star.add_spot(theta, phi, radii, contrast)
-
-                    # compute light curve amplitude
-                    amp = star.flux(phase).ptp()
+                    amp = amplitude_of(n_spot)
 
                 if transit_chord:
                     f_chords.append(star.covering_fraction(transit_chord=True))
@@ -114,8 +101,4 @@ def estimate_spot_coverage(
                 amps.append(amp)
                 break
 
-    if transit_chord:
-        return f_chords, f_disks, n_spots, amps
-
-    else:
-        return f_disks, n_spots, amps
+    return f_disks, n_spots, amps, f_chords
