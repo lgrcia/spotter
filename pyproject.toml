@@ -25,7 +25,6 @@ myst-parser = "*"
 sphinx-book-theme = "^1.0.0"
 myst-nb = "*"
 sphinx-copybutton = "*"
-sphinx-design = "*"
 toml = "*"
 ipywidgets = "*"
 
