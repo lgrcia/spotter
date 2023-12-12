@@ -1,3 +1,5 @@
+from dataclasses import dataclass
+
 import healpy as hp
 import jax
 import jax.numpy as jnp
@@ -72,34 +74,34 @@ def query_idxs_function(thetas, phis):
     return query_idxs
 
 
+@dataclass
 class Star:
-    def __init__(self, u=None, N=64, b=None, r=None):
-        """
-        Initialize a Star object.
+    """
+    A star object
+    """
 
-        Parameters
-        ----------
-        u : list, optional
-            List of limb darkening coefficients. Defaults to None.
-        N : int, optional
-            The resolution parameter for the HEALPix map. Defaults to 64.
-        b : float, optional
-            Impact parameter of the transit chord. Defaults to None.
-        r : float, optional
-            Planet radius. Defaults to None.
-        """
-        self.N = N
-        if u is None:
-            u = []
+    u: list = None
+    """List of limb darkening coefficients. Defaults to None."""
+    N: int = 64
+    """Star's HEALPix map nside parameter. Defaults to 64."""
+    b: float = None
+    """Impact parameter of the transit chord. Defaults to None."""
+    r: float = None
+    """Planet radius. Defaults to None."""
+    map_spot: np.ndarray = None
+    """The star's spot map. Defaults to None."""
+    map_faculae: np.ndarray = None
+    """The star's faculae map. Defaults to None."""
 
-        self.u = u
+    def __post_init__(self):
+        if self.u is None:
+            self.u = [0.0]
+
         self.n = hp.nside2npix(self.N)
         self._phis, self._thetas = hp.pix2ang(self.N, np.arange(self.n))
         self._sin_phi = np.sin(self._phis)
 
         # these two maps are subject to different limb laws
-        self.map_spot = None
-        self.map_faculae = None
         self.clear_surface()
 
         self.hemisphere_mask = jax.vmap(hemisphere_mask_function(self._thetas))
@@ -109,13 +111,11 @@ class Star:
 
         # Define transit chord if impact parameter (b) and planet radius (r) provided
         self._map_chord = np.zeros(self.n)
-        assert (b is None and r is None) or (
-            b is not None and r is not None
+        assert (self.b is None and self.r is None) or (
+            self.b is not None and self.r is not None
         ), "Either both b and r must be provided or neither."
-        self.b = b
-        self.r = r
-        if b is not None and r is not None:
-            self.define_transit_chord(b, r)
+        if self.b is not None and self.r is not None:
+            self.define_transit_chord(self.b, self.r)
 
     def _z(self, phase=0):
         """
@@ -155,7 +155,7 @@ class Star:
     @property
     def resolution(self):
         """
-        Get the resolution of the star's HEALPix map.
+        Resolution of the star's HEALPix map.
 
         Returns
         -------
@@ -166,7 +166,7 @@ class Star:
 
     def add_spot(self, theta, phi, radius, contrast):
         """
-        Add a spot to the star's surface.
+        Add spot(s) to the star's surface.
 
         Parameters
         ----------
@@ -178,6 +178,33 @@ class Star:
             The radius(es) of the spot(s).
         contrast : float or list
             The contrast(s) of the spot(s).
+
+        Examples
+        --------
+        .. plot::
+            :context:
+            :nofigs:
+
+            import matplotlib.pyplot as plt
+            from spotter import Star
+            star = Star(u=[0.1, 0.2], N=2**7)
+
+        >>> from spotter import Star
+        >>> star = Star(u=[0.1, 0.2], N=2**7)
+
+        To add spot(s)
+
+        >>> star.add_spot([1.5, 1.], [0.2, 0.5], [0.1, 0.3], 0.1)
+        >>> star.show()
+
+        .. plot::
+            :context:
+
+            star.clear_surface()
+            star.add_spot([1.5, 1.], [0.2, 0.5], [0.1, 0.3], 0.1)
+            star.show()
+            plt.tight_layout()
+
         """
         for t, p, r, c in zip(*_wrap(theta, phi, radius, contrast)):
             idxs = hp.query_disc(self.N, hp.ang2vec(t, p), r)
@@ -185,7 +212,7 @@ class Star:
 
     def add_faculae(self, theta, phi, radius_in, radius_out, contrast):
         """
-        Add faculae to the star's surface.
+        Add facula(e) to the star's surface.
 
         Parameters
         ----------
@@ -199,6 +226,27 @@ class Star:
             The outer radius(es) of the faculae.
         contrast : float or list
             The contrast(s) of the faculae.
+
+        Examples
+        --------
+        If we create a stellar map
+
+        .. plot::
+            :context:
+            :include-source:
+
+            from spotter import Star
+            import numpy as np
+            from spotter.distributions import butterfly
+
+            # adding faculae
+            np.random.seed(15)
+            star = Star(u=[0.1, 0.2], N=2**7)
+            lat, lon = butterfly(0.25, 0.08, 100)
+            star.add_faculae(lat, lon, 0.1, 0.12, 0.1)
+            star.show()
+            plt.tight_layout()
+
         """
         for t, p, ri, ro, c in zip(*_wrap(theta, phi, radius_in, radius_out, contrast)):
             inner_idxs = hp.query_disc(self.N, hp.ang2vec(t, p), ri)
@@ -210,7 +258,7 @@ class Star:
         self, theta, phi, radius_in, radius_out, contrast_spot, contrast_faculae
     ):
         """
-        Add both spot and faculae to the star's surface.
+        Add both spot(s) and facula(e) to the star's surface.
 
         Parameters
         ----------
@@ -226,6 +274,29 @@ class Star:
             The contrast(s) of the spot(s).
         contrast_faculae : float or list
             The contrast(s) of the faculae.
+
+        Examples
+        --------
+        If we create a stellar map
+
+        .. plot::
+            :context:
+            :include-source:
+
+            from spotter import Star
+            import numpy as np
+            from spotter.distributions import butterfly
+
+            # adding spot and faculae
+            np.random.seed(15)
+            star = Star(u=[0.1, 0.2], N=2**7)
+            lat, lon = butterfly(0.25, 0.08, 200)
+            radii = np.random.uniform(0.05, 0.1, len(lat))
+            star.add_spot_faculae(lat, lon, radii, radii + 0.02, 0.05, 0.03)
+            star.show()
+            plt.tight_layout()
+
+
         """
         for t, p, ri, ro, cs, cf in zip(
             *_wrap(theta, phi, radius_in, radius_out, contrast_spot, contrast_faculae)
@@ -267,6 +338,64 @@ class Star:
         -------
         function
             A JAX function that calculates the flux of the star at the given phases.
+
+        Examples
+        --------
+
+        If we create a stellar map with random spots
+
+        .. plot::
+            :context:
+            :include-source:
+
+            from spotter import Star
+            import numpy as np
+            import matplotlib.pyplot as plt
+            from spotter.distributions import butterfly
+
+            # adding spots
+            np.random.seed(15)
+            star = Star(u=[0.1, 0.2], N=2**6)
+            lat, lon = butterfly(0.25, 0.08, 200)
+            star.add_spot(lat, lon, 0.05, 0.1)
+            star.show()
+
+        we can compute the light curve of the star at a given phase with
+
+        .. plot::
+            :include-source:
+            :context: close-figs
+
+            phases = np.linspace(0, 4 * np.pi, 1000)
+            flux = star.jax_flux(phases)
+            y = flux(star.map_spot)
+            plt.plot(phases, y)
+            plt.tight_layout()
+
+        Note the gain from using a pre-computed jax flux compared to the base ``flux`` method
+
+        .. code-block:: python
+
+            from time import time
+            import jax
+
+            t0 = time()
+            y = star.flux(phases)
+            time_base = time() - t0
+
+            t0 = time()
+            y = jax.block_until_ready(flux(star.map_spot))
+            time_jax = time() - t0
+
+            print(f"base: {time_base:.3f} s")
+            print(f"jax: {time_jax:.3f} s")
+
+        .. code-block:: none
+
+            base: 1.115 s
+            jax: 0.031 s
+
+
         """
         mask = self.hemisphere_mask(phases)
         limb_darkening = self.poly_lim_dark(self.u, phases)
@@ -291,6 +420,65 @@ class Star:
         -------
         function
             A JAX function that calculates the amplitude of the star's peak to peak amplitude.
+
+        Examples
+        --------
+
+        If we create a stellar map with random spots
+
+        .. plot::
+            :context:
+            :include-source:
+
+            from spotter import Star
+            import numpy as np
+            import matplotlib.pyplot as plt
+            from spotter.distributions import butterfly
+
+            # adding spots
+            np.random.seed(15)
+            star = Star(u=[0.1, 0.2], N=2**6)
+            lat, lon = butterfly(0.25, 0.08, 200)
+            star.add_spot(lat, lon, 0.05, 0.1)
+            star.show()
+
+        We can compute the amplitude of the star at a given phase with
+
+        .. plot::
+            :include-source:
+            :context: close-figs
+
+            amplitude = star.jax_amplitude(resolution=3)
+            a = amplitude(star.map_spot)
+            print(f"Amplitude: {a:.3e}")
+
+        .. code-block:: none
+
+            Amplitude: 1.279e-03
+
+        Note the gain from using a pre-computed jax amplitude compared to the base ``amplitude`` method
+
+        .. code-block:: python
+
+            from time import time
+            import jax
+
+            phase = np.arange(0, 2 * np.pi, star.resolution)
+            t0 = time()
+            a = star.flux(phases).ptp()  # assuming this method exists
+            time_base = time() - t0
+
+            t0 = time()
+            a = jax.block_until_ready(amplitude(star.map_spot))
+            time_jax = time() - t0
+
+            print(f"base: {time_base:.3f} s")
+            print(f"jax: {time_jax:.3f} s")
+
+        .. code-block:: none
+
+            base: 1.210 s
+            jax: 0.004 s
         """
         hp_resolution = hp.nside2resol(self.N) * resolution
         phases = np.arange(0, 2 * np.pi, hp_resolution)
@@ -299,7 +487,7 @@ class Star:
         @jax.jit
         def amplitude(spot_map):
             f = flux(spot_map)
-            return jnp.max(f) - jnp.min(f)
+            return jnp.ptp(f)
 
         return amplitude
 
@@ -331,7 +519,7 @@ class Star:
 
         return m.sum(1) / (mask * limb_darkening).sum(1)
 
-    def m(self, phase=0):
+    def map(self, phase=None, limb_darkening=False):
         """
         Return the pixel elements values of the map.
 
@@ -345,10 +533,22 @@ class Star:
         numpy.ndarray
             Pixel elements values of the map.
         """
-        mask = self._get_mask(phase)
-        limb_darkening = self._ld(phase)
-        m = (1 - self.map_spot) * mask * limb_darkening
-        m += self.map_faculae * mask * limb_darkening
+        if phase is None:
+            mask = 1
+        else:
+            mask = self.hemisphere_mask(np.array([phase]))[0].__array__()
+
+        if limb_darkening and phase is not None:
+            spot_limb_darkening = self.poly_lim_dark(self.u, np.array([phase]))[
+                0
+            ].__array__()
+        else:
+            spot_limb_darkening = 1
+
+        faculae_limb_brightening = 1
+        m = (1 - self.map_spot) * mask * spot_limb_darkening
+        spots = self.map_spot == 0.0
+        m[spots] = m[spots] + (self.map_faculae * faculae_limb_brightening)[spots]
         return m
 
     def show(
@@ -357,6 +557,7 @@ class Star:
         grid: bool = False,
         return_img: bool = False,
         chord: float = None,
+        ax=None,
         **kwargs,
     ):
         """
@@ -372,7 +573,7 @@ class Star:
             Whether to return the projected map as an image. Defaults to False.
         chord : float, optional
             An additional contrast applied on the map to visualize the
-            position of the transit chord. Defaults to None.
+            position of the transit chord. Defaults to `None`.
 
         Returns
         -------
@@ -382,21 +583,45 @@ class Star:
 
         Examples
         --------
+        To show the stellar disk
+
+        >>> from spotter import Star
         >>> star = Star(u=[0.1, 0.2], N=2**7, b=-0.7, r=0.06)
-        >>> star.show(chord=0.2)
+        >>> star.show()
+
+        .. plot::
+            :context:
+
+            import matplotlib.pyplot as plt
+            from spotter import Star
+            star = Star(u=[0.1, 0.2], N=2**7, b=-0.7, r=0.06)
+            star.show()
+            plt.show()
+
+        To visualize the transit chord
+
+        >>> star.show(chord=0.1)
+
+        .. plot::
+            :context:
+
+            star.show(chord=0.1)
+            plt.show()
+
         """
         kwargs.setdefault("cmap", "magma")
+        kwargs.setdefault("origin", "lower")
+        ax = ax or plt.gca()
+
         # both spot and faculae with same ld for now (TODO)
-        rotated_m = hp.Rotator(rot=[phase, 0], deg=False).rotate_map_pixel(
-            (1 - self.map_spot) + self.map_faculae
-        )
+        rotated_m = hp.Rotator(rot=[phase, 0], deg=False).rotate_map_pixel(self.map())
         if self.has_chord and (chord is not None):
             assert isinstance(chord, float), "chord must be a float (or None)"
             mask = self._map_chord > 0
             rotated_m[mask] = rotated_m[mask] * (1 - chord)
 
         projected_map = hp.orthview(
-            rotated_m * self.poly_lim_dark(self.u, np.array([phase]))[0],
+            rotated_m * self.poly_lim_dark(self.u, np.array([0]))[0],
             half_sky=True,
             return_projected_map=True,
         )
@@ -404,8 +629,8 @@ class Star:
         if return_img:
             return projected_map
         else:
-            plt.axis(False)
-            plt.imshow(projected_map, **kwargs)
+            ax.axis(False)
+            ax.imshow(projected_map, **kwargs)
 
     def covering_fraction(
         self, phase: float = None, vmin: float = 0.01, chord=False, disk=False
@@ -435,6 +660,7 @@ class Star:
         --------
         >>> star = Star(u=[0.1, 0.2], N=2**7, b=-0.7, r=0.06)
         >>> star.covering_fraction()
+        0.0
         """
         if not chord:
             if phase is None:
