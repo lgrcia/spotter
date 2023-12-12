@@ -17,3 +17,10 @@ notebooks/simple_example
 notebooks/experiments
 notebooks/amplitude_constraints.ipynb
 ```
+
+```{toctree}
+:maxdepth: 1
+:caption: Notes
+
+notebooks/rotation.ipynb
+```

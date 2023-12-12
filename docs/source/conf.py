@@ -10,7 +10,7 @@ extensions = [
     "sphinx.ext.napoleon",
     "sphinx.ext.autosummary",
     "sphinx.ext.viewcode",
-    "sphinx.ext.doctest",
+    "matplotlib.sphinxext.plot_directive",
 ]
 
 templates_path = ["_templates"]
@@ -44,3 +44,6 @@ html_title = f"{html_short_title}"
 
 html_css_files = ["style.css"]
 myst_url_schemes = ("http", "https")
+
+plot_html_show_formats = False
+plot_html_show_source_link = False
