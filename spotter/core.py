@@ -1,7 +1,10 @@
+import jax
 import jax.numpy as jnp
 
+jax.config.update("jax_enable_x64", True)
 
-def hemisphere_mask_function(thetas):
+
+def hemisphere_mask(thetas):
     def mask(phase):
         a = (phase + jnp.pi / 2) % (2 * jnp.pi)
         b = (phase - jnp.pi / 2) % (2 * jnp.pi)
@@ -55,7 +58,7 @@ def shifted_spectra(spectra):
 
 
 def integrated_spectrum(thetas, phis, period, radius, wv, spectra):
-    mask_function = hemisphere_mask_function(thetas)
+    mask_function = hemisphere_mask(thetas)
     shift_function = doppler_shift_function(thetas, period, radius)
     shifted_spectra_function = shifted_spectra(spectra)
     sinphi = jnp.sin(phis)
