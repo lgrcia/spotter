@@ -1,3 +1,5 @@
+> Work in progress
+
 # spotter
 
 <p align="center" style="margin-bottom:-50px">
@@ -18,7 +20,17 @@
 
 *spotter* is a Python package to produce time-series forward models of stars. It uses the [HEALPix](https://healpix.sourceforge.io/) subdivision scheme and is powered by the high-performance machine learning package [JAX](https://jax.readthedocs.io/en/latest/notebooks/quickstart.html), enabling its use on GPUs.
 
+**Note**
+
 In its beta version, *spotter* is mainly developed to estimate transmission spectra stellar contamination from stellar rotational light curves.
+
+## Features
+
+- Adjustable surface resolution
+- Small scale surface features modeling (e.g. beyond limitations of [starry]())
+- Modeling of any active regions with their limb laws (e.g. limb-brightened faculae)
+- Possibility to input any stellar spectra model
+- GPU compatible
 
 ## Installation
 
