@@ -16,7 +16,9 @@
   </p>
 </p>
 
-*spotter* is a Python package to estimate transmission spectra stellar contamination from stellar rotational light curves.
+*spotter* is a Python package to produce time-series forward models of stars. It uses the [HEALPix](https://healpix.sourceforge.io/) subdivision scheme and is powered by the high-performance machine learning package [JAX](https://jax.readthedocs.io/en/latest/notebooks/quickstart.html), enabling its use on GPUs.
+
+In its beta version, *spotter* is mainly developed to estimate transmission spectra stellar contamination from stellar rotational light curves.
 
 ## Installation
 
@@ -30,53 +32,4 @@ with *spotter* cloned using
 ```
 git clone https://github.com/lgrcia/spotter
 ```
-
-## Example
-
-This is not the intended use of the package but here a demo of its current features:
-
-
-```python
-import numpy as np
-from spotter import Star, butterfly
-import matplotlib.pyplot as plt
-
-star = Star(u=[0.1, 0.2], N=128)
-
-# spots properties
-n = 200
-np.random.seed(42)
-theta, phi = butterfly(0.25, 0.08, n)
-radii = np.random.uniform(0.01, 0.1, n)
-contrast = 0.1
-
-# add spots
-star.add_spot(theta, phi, radii, contrast)
-
-# compute light curve
-phase = np.linspace(0, 4 * np.pi, 200)
-flux = star.flux(phase)
-```
-
-### Plotting
-
-```python
-plt.figure(figsize=(9, 3))
-plt.subplot(1, 5, (1, 2))
-star.show()
-
-plt.subplot(1, 5, (3, 5))
-plt.plot(phase, flux, c="k")
-plt.xlabel("phase")
-plt.ylabel("diff. flux")
-
-```
-
-<p align="center" style="margin-bottom:-50px">
-    <img src="docs/_static/example_star.png" width="100%">
-</p>
-
-### Difference with existing tools
-
-#### StarSim
 - 
