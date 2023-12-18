@@ -1,13 +1,13 @@
-> Work in progress
+> Work in progress, 0.0.3-beta released
 
 # spotter
 
 <p align="center" style="margin-bottom:-50px">
-    <img src="docs/_static/spotter.jpg" width="400">
+    <img src="docs/_static/spotter.jpg" width="380">
 </p>
 
 <p align="center">
-  Time-series spectra forward models of non-uniform stars
+  Forward models of non-uniform stars spectra
   <br>
   <p align="center">
     <a href="https://github.com/lgrcia/spotter">
@@ -18,7 +18,7 @@
   </p>
 </p>
 
-*spotter* is a Python package to produce time-series forward models of stars. It uses the [HEALPix](https://healpix.sourceforge.io/) subdivision scheme and is powered by the high-performance machine learning package [JAX](https://jax.readthedocs.io/en/latest/notebooks/quickstart.html), enabling its use on GPUs.
+*spotter* is a Python package to produce forward models of non-uniform stars spectra. It uses the [HEALPix](https://healpix.sourceforge.io/) subdivision scheme and is powered by the high-performance numerical package [JAX](https://jax.readthedocs.io/en/latest/notebooks/quickstart.html), enabling its use on GPUs.
 
 **Note**
 
@@ -26,11 +26,12 @@ In its beta version, *spotter* is mainly developed to estimate transmission spec
 
 ## Features
 
-- Adjustable surface resolution
-- Small scale surface features modeling (e.g. beyond limitations of [starry]())
+- Adjustable surface resolution <span style="color:grey">- *in beta*</span>
+- Small-scale surface features modeling (e.g. beyond limitations of [starry]()) <span style="color:grey">- *in beta*</span>
 - Modeling of any active regions with their limb laws (e.g. limb-brightened faculae)
+- GPU compatible <span style="color:grey">- *in beta*</span>
 - Possibility to input any stellar spectra model
-- GPU compatible
+
 
 ## Installation
 
@@ -44,4 +45,3 @@ with *spotter* cloned using
 ```
 git clone https://github.com/lgrcia/spotter
 ```
-- 
