@@ -22,7 +22,7 @@
 
 **Note**
 
-In its beta version, *spotter* is mainly developed to estimate transmission spectra stellar contamination from stellar rotational light curves.
+In its beta version, *spotter* is mainly developed to estimate transmission spectra stellar contamination from stellar rotational light curves. Use at your own risk as the code is completely untested and its API subject to change.
 
 ## Features
 
