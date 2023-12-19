@@ -1,19 +1,37 @@
+> Work in progress, 0.0.3-beta released
+
 # spotter
 
-<!-- <p align="center">
-  Stellar contamination estimates from rotational light curves
+<p align="center" style="margin-bottom:-50px">
+    <img src="docs/_static/spotter.jpg" width="380">
+</p>
+
+<p align="center">
+  Forward models of non-uniform stars spectra
   <br>
   <p align="center">
     <a href="https://github.com/lgrcia/spotter">
-      <img src="https://img.shields.io/badge/github-lgrcia/spotter-indianred.svg?style=flat" alt="github"/>
-    </a>
+      <img src="https://img.shields.io/badge/github-lgrcia/spotter-indianred.svg?style=flat" alt="github"/></a>
     <a href="LICENCE">
       <img src="https://img.shields.io/badge/license-MIT-lightgray.svg?style=flat" alt="license"/>
     </a>
   </p>
-</p> -->
+</p>
 
-*spotter* is a Python package to estimate transmission spectra stellar contamination from stellar rotational light curves.
+*spotter* is a Python package to produce forward models of non-uniform stars spectra. It uses the [HEALPix](https://healpix.sourceforge.io/) subdivision scheme and is powered by the high-performance numerical package [JAX](https://jax.readthedocs.io/en/latest/notebooks/quickstart.html), enabling its use on GPUs.
+
+**Note**
+
+In its beta version, *spotter* is mainly developed to estimate transmission spectra stellar contamination from stellar rotational light curves. Use at your own risk as the code is completely untested and its API subject to change.
+
+## Features
+
+- Adjustable surface resolution <span style="color:grey">- *in beta*</span>
+- Small-scale surface features modeling (e.g. beyond limitations of [starry]()) <span style="color:grey">- *in beta*</span>
+- Modeling of any active regions with their limb laws (e.g. limb-brightened faculae)
+- GPU compatible <span style="color:grey">- *in beta*</span>
+- Possibility to input any stellar spectra model
+
 
 ## Installation
 
@@ -27,53 +45,3 @@ with *spotter* cloned using
 ```
 git clone https://github.com/lgrcia/spotter
 ```
-
-## Example
-
-This is not the intended use of the package but here a demo of its current features:
-
-
-```python
-import numpy as np
-from spotter import Star, butterfly
-import matplotlib.pyplot as plt
-
-star = Star(u=[0.1, 0.2], N=128)
-
-# spots properties
-n = 200
-np.random.seed(42)
-theta, phi = butterfly(0.25, 0.08, n)
-radii = np.random.uniform(0.01, 0.1, n)
-contrast = 0.1
-
-# add spots
-star.add_spot(theta, phi, radii, contrast)
-
-# compute light curve
-phase = np.linspace(0, 4 * np.pi, 200)
-flux = star.flux(phase)
-```
-
-### Plotting
-
-```python
-plt.figure(figsize=(9, 3))
-plt.subplot(1, 5, (1, 2))
-star.show()
-
-plt.subplot(1, 5, (3, 5))
-plt.plot(phase, flux, c="k")
-plt.xlabel("phase")
-plt.ylabel("diff. flux")
-
-```
-
-<p align="center" style="margin-bottom:-50px">
-    <img src="docs/_static/example_star.png" width="100%">
-</p>
-
-### Difference with existing tools
-
-#### StarSim
-- 
