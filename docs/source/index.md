@@ -9,7 +9,7 @@
 
 **Note**
 
-In its beta version, *spotter* is mainly developed to estimate transmission spectra stellar contamination from stellar rotational light curves.
+In its beta version, *spotter* is mainly developed to estimate transmission spectra stellar contamination from stellar rotational light curves. Use at your own risk as the code is completely untested and its API subject to change.
 
 ## Features
 
@@ -18,7 +18,6 @@ In its beta version, *spotter* is mainly developed to estimate transmission spec
 - Modeling of any active regions with their limb laws (e.g. limb-brightened faculae)
 - GPU compatible <span style="color:grey">- *in beta*</span>
 - Possibility to input any stellar spectra model
-
 
 ```{toctree}
 :maxdepth: 1

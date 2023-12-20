@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  Forward models of non-uniform stars spectra
+  Forward models of non-uniform stellar photospheres and their spectra
   <br>
   <p align="center">
     <a href="https://github.com/lgrcia/spotter">
