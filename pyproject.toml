@@ -29,6 +29,9 @@ sphinx-copybutton = "*"
 toml = "*"
 ipywidgets = "*"
 
+[tool.poetry.packages]
+include = [{ include = "spotter"}]
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
