@@ -1,4 +1,4 @@
-> Work in progress, 0.0.3-beta released
+> Work in progress, beta released
 
 # spotter
 
