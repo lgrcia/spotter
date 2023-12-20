@@ -73,6 +73,18 @@ class Star:
         self.map_faculae = np.zeros(self.n)
 
     @property
+    def shape(self):
+        """
+        Shape of the star's HEALPix map.
+
+        Returns
+        -------
+        tuple
+            The shape of the star's HEALPix map.
+        """
+        return (self.n,)
+
+    @property
     def has_chord(self):
         """
         Check if the star has a transit chord defined.
@@ -142,7 +154,7 @@ class Star:
             idxs = hp.query_disc(self.N, hp.ang2vec(t, p), r)
             self.map_spot[idxs] = c
 
-    def add_faculae(self, theta, phi, radius_in, radius_out, contrast):
+    def add_faculae(self, theta, phi, radius_in, contrast, radius_out=None):
         """
         Add facula(e) to the star's surface.
 
@@ -154,15 +166,13 @@ class Star:
             The azimuthal angle(s) of the faculae.
         radius_in : float or list
             The inner radius(es) of the faculae.
-        radius_out : float or list
-            The outer radius(es) of the faculae.
         contrast : float or list
-            The contrast(s) of the faculae.
+            The contrast(s) of the faculae (>1.).
+        radius_out : float or list
+            The outer radius(es) of the faculae. Defaults to None.
 
         Examples
         --------
-        If we create a stellar map
-
         .. plot::
             :context:
             :include-source:
@@ -175,16 +185,34 @@ class Star:
             np.random.seed(15)
             star = Star(u=[0.1, 0.2], N=2**7)
             lat, lon = butterfly(0.25, 0.08, 100)
-            star.add_faculae(lat, lon, 0.1, 0.12, 0.1)
+            star.add_faculae(lat, lon, 0.02, 1.1)
+            star.show()
+            plt.tight_layout()
+
+        And to create annulus faculae
+
+        .. plot::
+            :context: close-figs
+            :include-source:
+
+            star.clear_surface()
+            star.add_faculae(lat, lon, 0.1, 1.1, radius_out=0.15)
             star.show()
             plt.tight_layout()
 
         """
-        for t, p, ri, ro, c in zip(*_wrap(theta, phi, radius_in, radius_out, contrast)):
-            inner_idxs = hp.query_disc(self.N, hp.ang2vec(t, p), ri)
-            outer_idxs = hp.query_disc(self.N, hp.ang2vec(t, p), ro)
-            idxs = np.setdiff1d(outer_idxs, inner_idxs)
-            self.map_faculae[idxs] = c
+        if radius_out is None:
+            for t, p, r, c in zip(*_wrap(theta, phi, radius_in, contrast)):
+                idxs = hp.query_disc(self.N, hp.ang2vec(t, p), r)
+                self.map_faculae[idxs] = c
+        else:
+            for t, p, ri, ro, c in zip(
+                *_wrap(theta, phi, radius_in, radius_out, contrast)
+            ):
+                inner_idxs = hp.query_disc(self.N, hp.ang2vec(t, p), ri)
+                outer_idxs = hp.query_disc(self.N, hp.ang2vec(t, p), ro)
+                idxs = np.setdiff1d(outer_idxs, inner_idxs)
+                self.map_faculae[idxs] = c
 
     def add_spot_faculae(
         self, theta, phi, radius_in, radius_out, contrast_spot, contrast_faculae
