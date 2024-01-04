@@ -5,6 +5,8 @@ def butterfly(latitudes=0, latitude_sigma=0, n=1):
     theta = np.pi / 2 - (
         np.random.normal(latitudes, latitude_sigma, n) * np.random.choice([-1, 1], n)
     )
+    theta_max = np.pi - 1e-4
+    theta = np.clip(theta, 0.0, theta_max)
     phi = np.random.uniform(0, 2 * np.pi, n)
     return theta, phi
 
