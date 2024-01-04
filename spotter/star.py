@@ -37,27 +37,81 @@ class Star:
     r: float = None
     """Planet radius. Defaults to None."""
     map_spot: np.ndarray = None
-    """The star's spot map. Defaults to None."""
+    """The star's spot map contrast as a fraction of the quiescent photosphere. Defaults to None."""
     map_faculae: np.ndarray = None
-    """The star's faculae map. Defaults to None."""
+    """The star's faculae map contrast as a fraction of the quiescent photosphere. Defaults to None."""
+    spectrum: callable = None
+    wv: np.ndarray = None
+    radius: float = 1.0
+    """Star's radius in solar radii. Defaults to None."""
+    period: float = 1.0
+    """Star's rotation period in days. Defaults to None."""
 
     def __post_init__(self):
         if self.u is None:
             self.u = [0.0]
 
+        # Maps
+        # ----
         self.n = hp.nside2npix(self.N)
         self._phis, self._thetas = hp.pix2ang(self.N, np.arange(self.n))
         self._sin_phi = np.sin(self._phis)
-
-        # these two maps are subject to different limb laws
         self.clear_surface()
 
+        # Spectral
+        # --------
+        if self.wv is not None:
+            dw = np.unique(np.diff(self.wv))
+            # if len(dw) > 1:
+            #     raise ValueError("wavelength must be evenly spaced")
+            # else:
+            self.dw = dw[0]
+        else:
+            self.dw = None
+
+        if self.spectrum is None:
+            self.spectrum = lambda x: np.ones_like(x)
+            self.map_spectrum = np.ones((self.n, len(self.wv)))
+        else:
+            self.map_spectrum = (
+                np.ones(self.n)[:, None] * self.spectrum(self.wv)[None, :]
+            )
+
+        self.max_shift = (
+            int(
+                np.ceil(
+                    (
+                        np.max(
+                            core.doppler_shift_function(
+                                self._thetas, self.period, self.radius
+                            )(0.0)
+                        )
+                        * self.wv[-1]
+                    )
+                    / self.dw
+                )
+            )
+            * 2
+        )
+
+        self.extended_wv = np.linspace(
+            self.wv[0] - self.max_shift * self.dw,
+            self.wv[-1] + self.max_shift * self.dw,
+            self.wv.size + 2 * self.max_shift,
+        )
+        self.extended_map_spectrum = (
+            np.ones(self.n)[:, None] * self.spectrum(self.extended_wv)[None, :]
+        )
+
+        # JAX functions
+        # -------------
         self.hemisphere_mask = jax.vmap(core.hemisphere_mask(self._thetas))
         self.polynomial_limb_darkening = jax.vmap(
             core.polynomial_limb_darkening(self._thetas, self._phis), in_axes=(None, 0)
         )
 
-        # Define transit chord if impact parameter (b) and planet radius (r) provided
+        # Transit chord
+        # -------------
         self._map_chord = np.zeros(self.n)
         assert (self.b is None and self.r is None) or (
             self.b is not None and self.r is not None
@@ -108,7 +162,7 @@ class Star:
         """
         return hp.nside2resol(self.N)
 
-    def add_spot(self, theta, phi, radius, contrast):
+    def add_spot(self, theta, phi, radius, contrast, spectrum=None):
         """
         Add spot(s) to the star's surface.
 
@@ -120,8 +174,14 @@ class Star:
             The azimuthal angle(s) of the spot(s).
         radius : float or list
             The radius(es) of the spot(s).
-        contrast : float or list
-            The contrast(s) of the spot(s).
+        contrast : float or list or None
+            The contrast(s) of the spot(s) as the fraction
+            of the difference of intensity with the quiescent photosphere,
+            i.e. :math:`I_{spot} = I_{quiescent} * (1 - contrast)`.
+            Either contrast or spectrum must be provided.
+        spectrum : float or list or None
+            The spectrum(s) of the spot(s) normalized to 1. If specified,
+            the spectrum is multiplied by :math:`I_{spot}` (see ``contrast``)
 
         Examples
         --------
@@ -150,9 +210,14 @@ class Star:
             plt.tight_layout()
 
         """
+        if spectrum is not None:
+            s = spectrum(self.extended_wv)
         for t, p, r, c in zip(*_wrap(theta, phi, radius, contrast)):
             idxs = hp.query_disc(self.N, hp.ang2vec(t, p), r)
             self.map_spot[idxs] = c
+
+            if spectrum is not None:
+                self.extended_map_spectrum[idxs] = s * c
 
     def add_faculae(self, theta, phi, radius_in, contrast, radius_out=None):
         """
@@ -167,7 +232,9 @@ class Star:
         radius_in : float or list
             The inner radius(es) of the faculae.
         contrast : float or list
-            The contrast(s) of the faculae (>1.).
+            The contrast(s) of the faculae as a fraction
+            of the intensity of the quiescent photosphere,
+            i.e. :math:`I_{faculae} = I_{quiescent} * contrast`.
         radius_out : float or list
             The outer radius(es) of the faculae. Defaults to None.
 
@@ -185,7 +252,7 @@ class Star:
             np.random.seed(15)
             star = Star(u=[0.1, 0.2], N=2**7)
             lat, lon = butterfly(0.25, 0.08, 100)
-            star.add_faculae(lat, lon, 0.02, 1.1)
+            star.add_faculae(lat, lon, 0.02, 0.05)
             star.show()
             plt.tight_layout()
 
@@ -196,7 +263,7 @@ class Star:
             :include-source:
 
             star.clear_surface()
-            star.add_faculae(lat, lon, 0.1, 1.1, radius_out=0.15)
+            star.add_faculae(lat, lon, 0.1, 0.1, radius_out=0.11)
             star.show()
             plt.tight_layout()
 
@@ -450,6 +517,23 @@ class Star:
             return jnp.ptp(f)
 
         return amplitude
+
+    def jax_spectrum(self):
+        _integrated_spectrum = core.integrated_spectrum(
+            self._thetas,
+            self._phis,
+            self.period,
+            self.radius,
+            self.extended_wv,
+            self.extended_map_spectrum,
+        )
+        max_shift = self.max_shift
+
+        def function(phase):
+            spectrum = _integrated_spectrum(phase)
+            return spectrum[max_shift:-max_shift]
+
+        return function
 
     def flux(self, phases):
         """

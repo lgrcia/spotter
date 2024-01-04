@@ -66,7 +66,7 @@ def integrated_spectrum(thetas, phis, period, radius, wv, spectra):
 
     def function(phase):
         mask = mask_function(phase)
-        shift = shift_function(phase).T
+        shift = shift_function(phase)
         s = shift[:, None] * wv / dw
         spectra_shifted = shifted_spectra_function(s)
         angle = sinphi * jnp.cos(thetas - phase)
