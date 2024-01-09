@@ -8,7 +8,7 @@ ALL_PYTHON_VS = ["3.9", "3.11"]
 @nox.session(python=ALL_PYTHON_VS)
 def test(session):
     session.install(".[test]")
-    session.run("pytest", "-n", "auto", *session.posargs)
+    session.run("pytest", *session.posargs)
 
 
 @nox.session(python=["3.9"])
