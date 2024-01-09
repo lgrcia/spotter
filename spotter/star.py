@@ -56,6 +56,7 @@ class Star:
         self.polynomial_limb_darkening = jax.vmap(
             core.polynomial_limb_darkening(self._thetas, self._phis), in_axes=(None, 0)
         )
+        self.projected_area = jax.vmap(core.projected_area(self._thetas, self._phis))
 
         # Define transit chord if impact parameter (b) and planet radius (r) provided
         self._map_chord = np.zeros(self.n)
@@ -331,11 +332,13 @@ class Star:
         """
         mask = self.hemisphere_mask(phases)
         limb_darkening = self.polynomial_limb_darkening(self.u, phases)
+        projected_area = self.projected_area(phases)
 
         @jax.jit
         def flux(spot_map):
-            m = (1 - spot_map) * mask * limb_darkening
-            return m.sum(1) / (mask * limb_darkening).sum(1)
+            _spot = (1 - spot_map) * limb_darkening
+            _geometry = mask * projected_area
+            return (_spot * _geometry).sum(1) / _geometry.sum(1)
 
         return flux
 
@@ -440,16 +443,20 @@ class Star:
         mask = np.vectorize(core.hemisphere_mask(self._thetas), signature="()->(n)")(
             phases
         )
+        projected_area = np.vectorize(
+            core.projected_area(self._thetas, self._phis), signature="()->(n)"
+        )(phases)
         limb_darkening = np.vectorize(
             core.polynomial_limb_darkening(self._thetas, self._phis),
             signature="()->(n)",
             excluded={0},
         )(self.u, phases)
-        m = (1 - self.map_spot) * mask * limb_darkening
+        _spot = (1 - self.map_spot) * limb_darkening
+        _geometry = mask * projected_area
         # faculae contribution, with same ld for now (TODO)
-        m += self.map_faculae * mask * limb_darkening
+        _faculae = self.map_faculae * limb_darkening
 
-        return m.sum(1) / (mask * limb_darkening).sum(1)
+        return ((_spot + _faculae) * _geometry).sum(1) / _geometry.sum(1)
 
     def map(self, phase=None, limb_darkening=False):
         """
