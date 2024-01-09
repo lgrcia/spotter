@@ -19,7 +19,7 @@ def comparison(session):
     if session.posargs:
         args = session.posargs
     else:
-        args = ("tests/experimental/starry",)
+        args = ("tests/starry",)
     session.run(
         "pytest",
         "-n",
