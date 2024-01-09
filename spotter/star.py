@@ -338,7 +338,9 @@ class Star:
         def flux(spot_map):
             _spot = (1 - spot_map) * limb_darkening
             _geometry = mask * projected_area
-            return (_spot * _geometry).sum(1) / (_geometry * limb_darkening).sum(1)
+            return (
+                np.pi * (_spot * _geometry).sum(1) / (_geometry * limb_darkening).sum(1)
+            )
 
         return flux
 
@@ -460,9 +462,11 @@ class Star:
         # faculae contribution, with same ld for now (TODO)
         _faculae = 0  # self.map_faculae * limb_darkening
 
-        return ((_spot + _faculae) * _geometry).sum(1) / (
-            _geometry * limb_darkening
-        ).sum(1)
+        return (
+            np.pi
+            * ((_spot + _faculae) * _geometry).sum(1)
+            / (_geometry * limb_darkening).sum(1)
+        )
 
     def map(self, phase=None, limb_darkening=False):
         """

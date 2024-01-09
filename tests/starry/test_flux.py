@@ -8,10 +8,8 @@ import healpy as hp
 @pytest.mark.parametrize("deg", (3, 10))
 @pytest.mark.parametrize("u", ([], [0.1, 0.4]))
 def test_starry(deg, u):
-    pytest.importorskip("starry")
-
+    starry = pytest.importorskip("starry")
     starry.config.lazy = False
-    starry.config.quiet = True
 
     # starry map with random coefficients
     np.random.seed(deg + len(u))
@@ -73,7 +71,7 @@ def test_starry(deg, u):
 
     # comparison
     phases = np.linspace(0, 2 * np.pi, 100)
-    expected = ms.flux(theta=np.rad2deg(phases))
-    calc = np.pi * star.flux(phases)
+    expected = np.array(ms.flux(theta=np.rad2deg(phases)))
+    calc = star.flux(phases)
 
     np.testing.assert_allclose(calc, expected, atol=1e-4)

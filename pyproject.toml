@@ -7,12 +7,12 @@ license = "MIT"
 readme = "readme.md"
 requires-python = ">=3.9"
 packages = [{ include = "spotter" },]
-dependencies = ["numpy<1.22", "healpy", "matplotlib", "jax", "jaxlib"]
+dependencies = ["numpy", "healpy", "matplotlib", "jax", "jaxlib"]
 
 [project.optional-dependencies]
 dev = ["black", "pytest", "nox"]
 test = ["pytest", "pytest-xdist"]
-comparison = ["starry", "tqdm", "xarray<2023.10.0"]
+comparison = ["starry", "tqdm", "xarray<2023.10.0", "numpy<1.22"]
 docs = [
     "sphinx",
     "docutils",
