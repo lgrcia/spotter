@@ -105,3 +105,10 @@ def query_idxs_function(thetas, phis):
         return jnp.array(d <= radius)
 
     return query_idxs
+
+
+def projected_area(thetas, phis):
+    def area(phase):
+        return jnp.cos(thetas - phase) * jnp.sin(phis)
+
+    return area
