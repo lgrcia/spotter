@@ -25,3 +25,10 @@ def polynomial_limb_darkening(thetas, phis):
         return 1 - jnp.sum(terms, 0)
 
     return ld
+
+
+def projected_area(thetas, phis):
+    def area(phase):
+        return jnp.cos(thetas - phase) * jnp.sin(phis)
+
+    return area
