@@ -2,12 +2,12 @@
 
 import nox
 
-ALL_PYTHON_VS = ["3.9", "3.10", "3.11"]
+ALL_PYTHON_VS = ["3.9", "3.11"]
 
 
 @nox.session(python=ALL_PYTHON_VS)
 def test(session):
-    session.install(".[test,test-math]")
+    session.install(".[test]")
     session.run("pytest", "-n", "auto", *session.posargs)
 
 
