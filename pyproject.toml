@@ -11,7 +11,7 @@ dependencies = ["numpy<1.22", "healpy", "matplotlib", "jax", "jaxlib"]
 
 [project.optional-dependencies]
 dev = ["black", "pytest", "nox"]
-test = ["pytest"]
+test = ["pytest", "pytest-xdist"]
 comparison = ["starry", "tqdm", "xarray<2023.10.0"]
 docs = [
     "sphinx",
