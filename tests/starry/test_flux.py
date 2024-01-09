@@ -8,7 +8,7 @@ import healpy as hp
 @pytest.mark.parametrize("deg", (3, 10))
 @pytest.mark.parametrize("u", ([], [0.1, 0.4]))
 def test_starry(deg, u):
-    starry = pytest.importorskip("starry")
+    pytest.importorskip("starry")
 
     starry.config.lazy = False
     starry.config.quiet = True
