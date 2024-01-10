@@ -1,8 +1,10 @@
-import pytest
-import numpy as np
-from spotter import Star
 from collections import defaultdict
+
 import healpy as hp
+import numpy as np
+import pytest
+
+from spotter import Star
 
 
 @pytest.mark.parametrize("deg", (3, 10))
