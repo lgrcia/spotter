@@ -75,3 +75,19 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           path: dist/*
+
+  publish:
+    environment:
+      name: pypi
+      url: https://pypi.org/p/starspotter
+    permissions:
+      id-token: write
+    needs: [tests, build]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'published' && startsWith(github.ref, 'refs/tags/')
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: artifact
+          path: dist
+      - uses: pypa/gh-action-pypi-publish@v1.8.11
