@@ -433,7 +433,9 @@ class Star:
         def flux(spot_map):
             _spot = (1 - spot_map) * limb_darkening
             _geometry = mask * projected_area
-            return (_spot * _geometry).sum(1) / _geometry.sum(1)
+            return (
+                np.pi * (_spot * _geometry).sum(1) / (_geometry * limb_darkening).sum(1)
+            )
 
         return flux
 
@@ -558,17 +560,25 @@ class Star:
         projected_area = np.vectorize(
             core.projected_area(self._thetas, self._phis), signature="()->(n)"
         )(phases)
-        limb_darkening = np.vectorize(
-            core.polynomial_limb_darkening(self._thetas, self._phis),
-            signature="()->(n)",
-            excluded={0},
-        )(self.u, phases)
+        limb_darkening = (
+            np.vectorize(
+                core.polynomial_limb_darkening(self._thetas, self._phis),
+                signature="()->(n)",
+                excluded={0},
+            )(self.u, phases)
+            if len(self.u) > 0
+            else 1
+        )
         _spot = (1 - self.map_spot) * limb_darkening
         _geometry = mask * projected_area
         # faculae contribution, with same ld for now (TODO)
-        _faculae = self.map_faculae * limb_darkening
+        _faculae = 0  # self.map_faculae * limb_darkening
 
-        return ((_spot + _faculae) * _geometry).sum(1) / _geometry.sum(1)
+        return (
+            np.pi
+            * ((_spot + _faculae) * _geometry).sum(1)
+            / (_geometry * limb_darkening).sum(1)
+        )
 
     def map(self, phase=None, limb_darkening=False):
         """
@@ -599,7 +609,8 @@ class Star:
         faculae_limb_brightening = 1
         m = (1 - self.map_spot) * mask * spot_limb_darkening
         spots = self.map_spot == 0.0
-        m[spots] = m[spots] + (self.map_faculae * faculae_limb_brightening)[spots]
+        if np.any(spots):
+            m[spots] = m[spots] + (self.map_faculae * faculae_limb_brightening)[spots]
         return m
 
     def show(
