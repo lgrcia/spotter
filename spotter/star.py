@@ -42,10 +42,7 @@ class Star:
     """The star's faculae map contrast as a fraction of the quiescent photosphere. Defaults to None."""
     spectrum: callable = None
     wv: np.ndarray = None
-    radius: float = 1.0
-    """Star's radius in solar radii. Defaults to None."""
-    period: float = 1.0
-    """Star's rotation period in days. Defaults to None."""
+    veq: float = 0.0
 
     def __post_init__(self):
         if self.u is None:
@@ -71,37 +68,43 @@ class Star:
 
         if self.spectrum is None:
             self.spectrum = lambda x: np.ones_like(x)
-            self.map_spectrum = np.ones((self.n, len(self.wv)))
+            if self.wv is None:
+                self.map_spectrum = np.ones(self.n)
+                self.dw = None
+            else:
+                self.map_spectrum = np.ones((self.n, len(self.wv)))
+                dw = np.unique(np.diff(self.wv))
+                self.dw = dw[0]
         else:
             self.map_spectrum = (
                 np.ones(self.n)[:, None] * self.spectrum(self.wv)[None, :]
             )
 
-        self.max_shift = (
-            int(
-                np.ceil(
-                    (
-                        np.max(
-                            core.doppler_shift_function(
-                                self._thetas, self.period, self.radius
-                            )(0.0)
+        if self.dw is not None:
+            # TODO : this must be trivial now that we work with veq
+            self.max_shift = (
+                int(
+                    np.ceil(
+                        (
+                            np.max(
+                                core.doppler_shift_function(self._thetas, self.veq)(0.0)
+                            )
+                            * self.wv[-1]
                         )
-                        * self.wv[-1]
+                        / self.dw
                     )
-                    / self.dw
                 )
+                * 2
             )
-            * 2
-        )
 
-        self.extended_wv = np.linspace(
-            self.wv[0] - self.max_shift * self.dw,
-            self.wv[-1] + self.max_shift * self.dw,
-            self.wv.size + 2 * self.max_shift,
-        )
-        self.extended_map_spectrum = (
-            np.ones(self.n)[:, None] * self.spectrum(self.extended_wv)[None, :]
-        )
+            self.extended_wv = np.linspace(
+                self.wv[0] - self.max_shift * self.dw,
+                self.wv[-1] + self.max_shift * self.dw,
+                self.wv.size + 2 * self.max_shift,
+            )
+            self.extended_map_spectrum = (
+                np.ones(self.n)[:, None] * self.spectrum(self.extended_wv)[None, :]
+            )
 
         # JAX functions
         # -------------

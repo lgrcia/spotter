@@ -27,15 +27,11 @@ def polynomial_limb_darkening(thetas, phis):
     return ld
 
 
-def doppler_shift_function(thetas, period, radius):
-    period_s = period * 24 * 60 * 60
-    omega = jnp.pi * 2 / period_s
-    radius_m = radius * 695700000.0
+def doppler_shift_function(thetas, veq):
     c = 299792458.0
 
     def doppler_shift(phase):
-        radial_velocity = radius_m * omega * jnp.sin(thetas - phase)
-        shift = radial_velocity / c
+        shift = veq * jnp.sin(thetas - phase) / c
         return shift
 
     return doppler_shift
@@ -57,11 +53,11 @@ def shifted_spectra(spectra):
     return function
 
 
-def integrated_spectrum(thetas, phis, period, radius, wv, spectra):
+def integrated_spectrum(thetas, phis, wv, spectra, veq):
     mask_function = hemisphere_mask(thetas)
-    shift_function = doppler_shift_function(thetas, period, radius)
+    shift_function = doppler_shift_function(thetas, veq)
     shifted_spectra_function = shifted_spectra(spectra)
-    sinphi = jnp.sin(phis)
+    projected_area_function = projected_area(thetas, phis)
     dw = wv[1] - wv[0]
 
     def function(phase):
@@ -69,8 +65,8 @@ def integrated_spectrum(thetas, phis, period, radius, wv, spectra):
         shift = shift_function(phase)
         s = shift[:, None] * wv / dw
         spectra_shifted = shifted_spectra_function(s)
-        angle = sinphi * jnp.cos(thetas - phase)
-        weighted = spectra_shifted * angle[:, None]
+        area = projected_area_function(phase)
+        weighted = spectra_shifted * area[:, None]
         return 2 * jnp.sum(weighted * mask[:, None], 0) / jnp.sum(mask)
 
     return function
