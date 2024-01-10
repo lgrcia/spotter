@@ -1,34 +1,30 @@
-[tool.poetry]
+[project]
 name = "spotter"
-version = "0.0.3"
+version = "0.0.6-beta"
 description = "Stellar contamination estimates from rotational light curves"
-authors = ["Lionel Garcia", "Benjamin Rackham"]
+authors = [{name="Lionel Garcia"}, {name="Benjamin Rackham"}]
 license = "MIT"
 readme = "readme.md"
+requires-python = ">=3.9"
+packages = [{ include = "spotter" },]
+dependencies = ["numpy", "healpy", "matplotlib", "jax", "jaxlib"]
 
-[tool.poetry.dependencies]
-python = "^3.9"
-numpy = "^1.25.0"
-healpy = "*"
-matplotlib = "*"
-jax = "*"
-jaxlib = "*"
-
-[tool.poetry.group.dev.dependencies]
-pytest = "*"
-black = "*"
-
-[tool.poetry.group.docs.dependencies]
-sphinx = "*"
-docutils = "*"
-jupyterlab = "*"
-myst-parser = "*"
-sphinx-book-theme = "^1.0.0"
-myst-nb = "*"
-sphinx-copybutton = "*"
-toml = "*"
-ipywidgets = "*"
+[project.optional-dependencies]
+dev = ["black", "pytest", "nox"]
+test = ["pytest", "pytest-xdist"]
+comparison = ["starry", "tqdm", "xarray<2023.10.0", "numpy<1.22"]
+docs = [
+    "sphinx",
+    "docutils",
+    "jupyterlab",
+    "myst-parser", 
+    "sphinx-book-theme", 
+    "myst-nb", 
+    "sphinx-copybutton",
+    "toml", 
+    "ipywidgets"
+    ]
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
