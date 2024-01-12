@@ -27,12 +27,12 @@ def polynomial_limb_darkening(thetas, phis):
     return ld
 
 
-def doppler_shift_function(thetas, veq):
+def doppler_shift_function(thetas, phis, veq):
     c = 299792458.0
 
     def doppler_shift(phase):
-        shift = veq * jnp.sin(thetas - phase) / c
-        return shift
+        beta = veq * jnp.sin(thetas - phase) * jnp.sin(phis) / c
+        return beta
 
     return doppler_shift
 
@@ -40,7 +40,7 @@ def doppler_shift_function(thetas, veq):
 def shifted_spectra(spectra):
     n = jnp.shape(spectra)[1]
     spectra_fft = jnp.fft.fft(spectra)
-    spectra_fft_shift = jnp.fft.fftshift(spectra_fft)
+    spectra_fft_shift = jnp.fft.fftshift(spectra_fft, axes=1)
     u = jnp.arange(-n / 2, n / 2)
 
     def function(shift):
@@ -53,21 +53,21 @@ def shifted_spectra(spectra):
     return function
 
 
-def integrated_spectrum(thetas, phis, wv, spectra, veq):
+def integrated_spectrum(thetas, phis, star_map, wv, spectra, veq):
     mask_function = hemisphere_mask(thetas)
-    shift_function = doppler_shift_function(thetas, veq)
-    shifted_spectra_function = shifted_spectra(spectra)
+    shift_function = doppler_shift_function(thetas, phis, veq)
+    shifted_spectra_function = shifted_spectra(spectra * star_map[:, None])
     projected_area_function = projected_area(thetas, phis)
     dw = wv[1] - wv[0]
 
     def function(phase):
-        mask = mask_function(phase)
         shift = shift_function(phase)
         s = shift[:, None] * wv / dw
-        spectra_shifted = shifted_spectra_function(s)
-        area = projected_area_function(phase)
-        weighted = spectra_shifted * area[:, None]
-        return 2 * jnp.sum(weighted * mask[:, None], 0) / jnp.sum(mask)
+        projected_area = projected_area_function(phase)
+        mask = mask_function(phase)
+        _geometry = projected_area * mask
+        spectra_shifted = shifted_spectra_function(s) * _geometry[:, None]
+        return jnp.sum(spectra_shifted, 0) / jnp.sum(_geometry * star_map, 0)
 
     return function
 

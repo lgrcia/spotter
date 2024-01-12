@@ -62,48 +62,50 @@ class Star:
             # if len(dw) > 1:
             #     raise ValueError("wavelength must be evenly spaced")
             # else:
-            self.dw = dw[0]
+            self._dw = dw[0]
         else:
-            self.dw = None
+            self._dw = None
 
         if self.spectrum is None:
             self.spectrum = lambda x: np.ones_like(x)
             if self.wv is None:
                 self.map_spectrum = np.ones(self.n)
-                self.dw = None
+                self._dw = None
             else:
                 self.map_spectrum = np.ones((self.n, len(self.wv)))
                 dw = np.unique(np.diff(self.wv))
-                self.dw = dw[0]
+                self._dw = dw[0]
         else:
             self.map_spectrum = (
                 np.ones(self.n)[:, None] * self.spectrum(self.wv)[None, :]
             )
 
-        if self.dw is not None:
+        if self.has_spectrum:
             # TODO : this must be trivial now that we work with veq
             self.max_shift = (
                 int(
                     np.ceil(
                         (
                             np.max(
-                                core.doppler_shift_function(self._thetas, self.veq)(0.0)
+                                core.doppler_shift_function(
+                                    self._thetas, self._phis, self.veq
+                                )(0.0)
                             )
                             * self.wv[-1]
                         )
-                        / self.dw
+                        / self._dw
                     )
                 )
                 * 2
             )
 
-            self.extended_wv = np.linspace(
-                self.wv[0] - self.max_shift * self.dw,
-                self.wv[-1] + self.max_shift * self.dw,
+            self._extended_wv = np.linspace(
+                self.wv[0] - self.max_shift * self._dw,
+                self.wv[-1] + self.max_shift * self._dw,
                 self.wv.size + 2 * self.max_shift,
             )
-            self.extended_map_spectrum = (
-                np.ones(self.n)[:, None] * self.spectrum(self.extended_wv)[None, :]
+            self._extended_map_spectrum = (
+                np.ones(self.n)[:, None] * self.spectrum(self._extended_wv)[None, :]
             )
 
         # JAX functions
@@ -129,6 +131,18 @@ class Star:
         """
         self.map_spot = np.zeros(self.n)
         self.map_faculae = np.zeros(self.n)
+
+    @property
+    def has_spectrum(self):
+        """
+        Check if the star has a spectrum defined.
+
+        Returns
+        -------
+        bool
+            True if the star has a spectrum defined, False otherwise.
+        """
+        return self.wv is not None
 
     @property
     def shape(self):
@@ -215,13 +229,13 @@ class Star:
 
         """
         if spectrum is not None:
-            s = spectrum(self.extended_wv)
+            s = spectrum(self._extended_wv)
         for t, p, r, c in zip(*_wrap(theta, phi, radius, contrast)):
             idxs = hp.query_disc(self.N, hp.ang2vec(t, p), r)
             self.map_spot[idxs] = c
 
             if spectrum is not None:
-                self.extended_map_spectrum[idxs] = s * c
+                self._extended_map_spectrum[idxs] = s * c
 
     def add_faculae(self, theta, phi, radius_in, contrast, radius_out=None):
         """
@@ -530,13 +544,14 @@ class Star:
         _integrated_spectrum = core.integrated_spectrum(
             self._thetas,
             self._phis,
-            self.period,
-            self.radius,
-            self.extended_wv,
-            self.extended_map_spectrum,
+            self.map(),
+            self._extended_wv,
+            self._extended_map_spectrum,
+            self.veq,
         )
         max_shift = self.max_shift
 
+        @jax.jit
         def function(phase):
             spectrum = _integrated_spectrum(phase)
             return spectrum[max_shift:-max_shift]
