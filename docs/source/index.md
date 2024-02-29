@@ -5,7 +5,7 @@
 :align: center
 ```
 
-*spotter* is a Python package to produce forward models of non-uniform stars spectra. It uses the [HEALPix](https://healpix.sourceforge.io/) subdivision scheme and is powered by the high-performance numerical package [JAX](https://jax.readthedocs.io/en/latest/notebooks/quickstart.html), enabling its use on GPUs.
+*spotter* is a Python package to to compute approximate forward models of fluxes and spectra time-series of non-uniform stars. It uses the [HEALPix](https://healpix.sourceforge.io/) subdivision scheme and is powered by the high-performance numerical package [JAX](https://jax.readthedocs.io/en/latest/notebooks/quickstart.html), enabling its use on GPUs.
 
 **Note**
 
@@ -23,6 +23,7 @@ In its beta version, *spotter* is mainly developed to estimate transmission spec
 :maxdepth: 1
 :caption: Get started
 
+notebooks/introduction
 api
 ```
 
