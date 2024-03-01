@@ -25,9 +25,7 @@
 In its beta version, *spotter* is mainly developed to estimate transmission spectra stellar contamination from stellar rotational light curves. Use at your own risk as the code is completely untested and its API subject to change.
 
 ## Features
-
-- Adjustable surface resolution <span style="color:grey">- *in beta*</span>
-- Small-scale surface feature modeling (e.g., beyond limitations of [starry]()) <span style="color:grey">- *in beta*</span>
+- Small-scale surface features (e.g., beyond limitations of [starry]()) <span style="color:grey">- *in beta*</span>
 - Modeling of active regions with unique angular dependence on brightness (e.g., limb-brightened faculae)
 - GPU compatible <span style="color:grey">- *in beta*</span>
 - Possibility to input any stellar spectra model

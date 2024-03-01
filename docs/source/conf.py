@@ -39,9 +39,7 @@ myst_enable_extensions = [
 ]
 
 nb_execution_mode = "off"
-html_short_title = "spotter"
-html_title = f"{html_short_title}"
-
+html_logo = "_static/spotter.png"
 html_css_files = ["style.css"]
 myst_url_schemes = ("http", "https")
 

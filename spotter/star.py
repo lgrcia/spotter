@@ -6,6 +6,7 @@ import numpy as np
 from jax.typing import ArrayLike
 
 from spotter import core
+from spotter.utils import Array
 
 
 def _wrap(*args):
@@ -20,12 +21,50 @@ def _wrap(*args):
 
 
 class Star(eqx.Module):
+    """An object holding the geometry of the stellar surface map."""
+
     N: int = 64
+    """HEALPix map nside"""
     n: int = eqx.field(static=True)
+    """Number of pixels"""
     phis: ArrayLike = eqx.field(static=True)  # lat
+    """The colatitudes of the pixels"""
     thetas: ArrayLike = eqx.field(static=True)  # lon
+    """The longitudes of the pixels"""
 
     def __init__(self, N: int = 64):
+        """An object holding the geometry of the stellar surface map.
+
+        Parameters
+        ----------
+        N : int, optional
+            HEALPix map nside, by default 64
+        """
+        self.N = N
+        self.n = hp.nside2npix(self.N)
+        self.thetas, self.phis = jnp.array(hp.pix2ang(self.N, jnp.arange(self.n)))
+
+
+class Star(eqx.Module):
+    """An object holding the geometry of the stellar surface map."""
+
+    N: int = 64
+    """HEALPix map nside"""
+    n: int = eqx.field(static=True)
+    """Number of pixels"""
+    phis: ArrayLike = eqx.field(static=True)  # lat
+    """The colatitudes of the pixels"""
+    thetas: ArrayLike = eqx.field(static=True)  # lon
+    """The longitudes of the pixels"""
+
+    def __init__(self, N: int = 64):
+        """An object holding the geometry of the stellar surface map.
+
+        Parameters
+        ----------
+        N : int, optional
+            HEALPix map nside, by default 64
+        """
         self.N = N
         self.n = hp.nside2npix(self.N)
         self.thetas, self.phis = jnp.array(hp.pix2ang(self.N, jnp.arange(self.n)))
@@ -60,7 +99,35 @@ class Star(eqx.Module):
 
         return fun
 
-    def spots(self, lat, lon, r, summed=True, cumulative=False):
+    def spots(
+        self,
+        lat: Array,
+        lon: Array,
+        r: Array,
+        summed: bool = True,
+        cumulative: bool = False,
+    ):
+        """Generate an HEALPix map of spots.
+
+        Parameters
+        ----------
+        lat : Array
+            latitude(s) of the spots
+        lon : Array
+            longitude(s) of the spots
+        r : Array
+            radius(ii) of the spots
+        summed : bool, optional
+            wether one map per spot is returned or summed, by default True
+        cumulative : bool, optional
+            wether each map contain a given spot plus all the previous ones,
+            by default False
+
+        Returns
+        -------
+        Array
+            HEALPix map of the spots
+        """
         if cumulative:
             summed = False
 
@@ -82,27 +149,98 @@ class Star(eqx.Module):
 
         return x
 
-    def masked(self, x, phase=0.0) -> ArrayLike:
+    def masked(self, x: Array, phase: float = 0.0) -> Array:
+        """Returns a map where pixels outside the visible hemisphere
+           of the star are set to zero.
+
+        Parameters
+        ----------
+        x : Array
+            pixels map
+        phase : float, optional
+            phase in radians, by default 0.0
+
+        Returns
+        -------
+        Array
+            masked map
+        """
         mask = core.hemisphere_mask(self.phis, phase)
         return x * mask
 
-    def limbed(self, x, u, phase=0.0) -> ArrayLike:
+    def limbed(self, x: Array, u: Array, phase=0.0) -> Array:
+        """Returns a map multiplied by the polynomial limb law.
+
+        Parameters
+        ----------
+        x : Array
+            pixels map
+        u : Array
+            polynomial limb law coefficients
+        phase : float, optional
+            phase in radians, by default 0.0
+
+        Returns
+        -------
+        Array
+            limbed map
+        """
         limb_darkening = core.polynomial_limb_darkening(
             self.phis, self.thetas, u, phase
         )
         return x * limb_darkening
 
-    def masked_limbed(self, x, u, phase=0.0) -> ArrayLike:
+    def masked_limbed(self, x: Array, u: Array, phase=0.0) -> Array:
+        """Returns a map where pixels outside the visible hemisphere
+           of the star are set to zero and multiplied by the polynomial limb law.
+
+        Parameters
+        ----------
+        x : Array
+            map
+        u : Array
+            polynomial limb law coefficients
+        phase : float, optional
+            phase in radians, by default 0.0
+
+        Returns
+        -------
+        Array
+            masked and limbed map
+        """
         mask = core.hemisphere_mask(self.phis, phase)
         limb_darkening = core.polynomial_limb_darkening(
             self.phis, self.thetas, u, phase
         )
         return x * limb_darkening * mask
 
-    def area(self, phase=0.0) -> ArrayLike:
+    def area(self, phase: float = 0.0) -> ArrayLike:
+        """Returns the projected area of each pixels in the map.
+
+         Parameters
+        ----------
+        phase : float, optional
+            phase in radians, by default 0.0
+        """
         return core.projected_area(self.phis, self.thetas, phase)
 
-    def flux(self, x, u, phase) -> float:
+    def flux(self, x: Array, u: Array, phase: float) -> float:
+        """Returns the total flux of the map.
+
+        Parameters
+        ----------
+        x : Array
+            map
+        u : Array
+            polynomial limb law coefficients
+        phase : Array
+            phase in radians
+
+        Returns
+        -------
+        float
+            integrated flux at the given phase
+        """
         mask = core.hemisphere_mask(self.phis, phase)
         limb_darkening = core.polynomial_limb_darkening(
             self.phis, self.thetas, u, phase
@@ -112,8 +250,26 @@ class Star(eqx.Module):
         geometry = mask * projected_area
         return jnp.pi * (limbed * geometry).sum() / (geometry * limb_darkening).sum()
 
-    def amplitude(self, u, resolution=3) -> ArrayLike:
-        hp_resolution = hp.nside2resol(self.N) * resolution
+    def amplitude(self, u: Array, undersampling: int = 3) -> callable:
+        """Returns a function to compute the amplitude of rotational light
+           curve of a given map.
+
+        Parameters
+        ----------
+        u : Array
+            polynomial limb law coefficients
+        resolution : int, optional
+            undersampling of the light curve according to the
+            resolution element of the map, by default 3
+
+        Returns
+        -------
+        callable
+            signature:
+            - if single map: (map: Array) -> amplitude: float
+            - if multiple maps: (maps: Array[Array]) -> amplitudes: Array
+        """
+        hp_resolution = hp.nside2resol(self.N) * undersampling
         phases = jnp.arange(0, 2 * jnp.pi, hp_resolution)
 
         mask = jax.vmap(core.hemisphere_mask, in_axes=(None, 0))(self.phis, phases)
@@ -137,7 +293,23 @@ class Star(eqx.Module):
 
         return fun
 
-    def render(self, x, u, phase=0.0):
+    def render(self, x: Array, u: Array, phase=0.0):
+        """Render the map disk at a given rotation phase.
+
+        Parameters
+        ----------
+        x : Array
+            map
+        u : Array
+            polynomial limb law coefficients
+        phase : Array
+            phase in radians, by default 0.0
+
+        Returns
+        -------
+        Array[Array]
+            Image of the map disk
+        """
         import matplotlib.pyplot as plt
 
         limb_darkening = core.polynomial_limb_darkening(self.phis, self.thetas, u, 0.0)
@@ -149,7 +321,20 @@ class Star(eqx.Module):
 
         return projected_map
 
-    def show(self, x, u=None, phase=0.0, ax=None, **kwargs):
+    def show(self, x: Array, u: Array = None, phase: float = 0.0, ax=None, **kwargs):
+        """Show the map disk.
+
+        Parameters
+        ----------
+        x : Array
+            map
+        u : Array
+            polynomial limb law coefficients
+        phase : Array
+            phase in radians, by default 0.0
+        ax : matplotlib.pyplot.Axe, optional
+            by default None
+        """
         import matplotlib.pyplot as plt
 
         if u is None:
@@ -163,9 +348,9 @@ class Star(eqx.Module):
         ax.axis(False)
         ax.imshow(img, **kwargs)
 
-    def transit_chord(self, r, b=0.0):
+    def transit_chord(self, r: float, b: float = 0.0):
         """
-        Return the map of a transit chord.
+        Returns the map of a transit chord.
 
         Parameters
         ----------

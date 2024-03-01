@@ -1,7 +1,11 @@
+from typing import Any
+
 import healpy as hp
 import numpy as np
 
 from spotter import core
+
+Array = Any
 
 
 def show_map(
