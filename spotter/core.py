@@ -34,19 +34,20 @@ def covering_fraction(x):
     return jnp.mean(x > 0)
 
 
-def query_disk(thetas, phis):
+def distance(thetas, phis):
 
-    def distance(theta0, phi0):
+    p1 = phis - jnp.pi / 2
+    t1 = thetas
+    sp1 = jnp.sin(p1)
+    cp1 = jnp.cos(p1)
+
+    def fun(theta0, phi0):
         # https://en.wikipedia.org/wiki/Great-circle_distance
         # Vincenty formula
-        p1 = phis - jnp.pi / 2
-        t1 = thetas
         p2 = theta0 - jnp.pi / 2
         t2 = phi0
         dl = jnp.abs((t1 - t2))
 
-        sp1 = jnp.sin(p1)
-        cp1 = jnp.cos(p1)
         sp2 = jnp.sin(p2)
         cp2 = jnp.cos(p2)
         cdl = jnp.cos(dl)
@@ -56,8 +57,27 @@ def query_disk(thetas, phis):
         b = sp1 * sp2 + cp1 * cp2 * cdl
         return jnp.arctan2(jnp.sqrt(a), b)
 
+    return fun
+
+
+def query_disk(thetas, phis):
+
+    distance_fn = distance(thetas, phis)
+
     def fun(theta, phi, radius):
-        d = distance(theta, phi)
+        d = distance_fn(theta, phi)
         return jnp.array(d <= radius, dtype=jnp.int8)
+
+    return fun
+
+
+def smooth_spot(thetas, phis):
+
+    distance_fn = distance(thetas, phis)
+
+    def fun(theta, phi, r, c):
+        A = c * distance_fn(theta, phi) / (2 * r)
+        C = c / 2
+        return 0.5 * jnp.tanh(C - A) + 0.5 * jnp.tanh(C + A)
 
     return fun

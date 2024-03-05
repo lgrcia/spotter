@@ -7,7 +7,7 @@ license = "MIT"
 readme = "readme.md"
 requires-python = ">=3.9"
 packages = [{ include = "spotter" },]
-dependencies = ["numpy", "healpy", "jax", "jaxlib", "equinox"]
+dependencies = ["numpy", "healpy", "jax", "jaxlib"]
 
 [project.optional-dependencies]
 dev = ["black", "pytest", "nox"]

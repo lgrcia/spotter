@@ -1,4 +1,3 @@
-import equinox as eqx
 import healpy as hp
 import jax
 import jax.numpy as jnp
@@ -45,7 +44,7 @@ class Star(eqx.Module):
         self.thetas, self.phis = jnp.array(hp.pix2ang(self.N, jnp.arange(self.n)))
 
 
-class Star(eqx.Module):
+class Star:
     """An object holding the geometry of the stellar surface map."""
 
     N: int = 64
@@ -68,6 +67,7 @@ class Star(eqx.Module):
         self.N = N
         self.n = hp.nside2npix(self.N)
         self.thetas, self.phis = jnp.array(hp.pix2ang(self.N, jnp.arange(self.n)))
+        self._smooth_spots = jax.jit(core.smooth_spot(self.phis, self.thetas))
 
     def _spots(self, accumulate=False, jit=True):
 
@@ -148,6 +148,9 @@ class Star(eqx.Module):
                 x = (x > 0).astype(np.int8)
 
         return x
+
+    def smooth_spots(self, lat, lon, r, c=12):
+        return self._smooth_spots(lat, lon, r, c)
 
     def masked(self, x: Array, phase: float = 0.0) -> Array:
         """Returns a map where pixels outside the visible hemisphere
@@ -250,6 +253,26 @@ class Star(eqx.Module):
         geometry = mask * projected_area
         return jnp.pi * (limbed * geometry).sum() / (geometry * limb_darkening).sum()
 
+    @property
+    def resolution(self):
+        """Resolution of the map in radians."""
+        return hp.nside2resol(self.N)
+
+    def single_spot_coverage(self, r: float):
+        """Return the coverage of a single spot of radius r.
+
+        Parameters
+        ----------
+        r : float
+            radius of the spot in radians
+
+        Returns
+        -------
+        float
+            coverage of the spot
+        """
+        return ((2 * np.pi * (1 - np.cos(r))) / self.resolution**2) / self.n
+
     def amplitude(self, u: Array, undersampling: int = 3) -> callable:
         """Returns a function to compute the amplitude of rotational light
            curve of a given map.
@@ -269,7 +292,7 @@ class Star(eqx.Module):
             - if single map: (map: Array) -> amplitude: float
             - if multiple maps: (maps: Array[Array]) -> amplitudes: Array
         """
-        hp_resolution = hp.nside2resol(self.N) * undersampling
+        hp_resolution = self.resolution * undersampling
         phases = jnp.arange(0, 2 * jnp.pi, hp_resolution)
 
         mask = jax.vmap(core.hemisphere_mask, in_axes=(None, 0))(self.phis, phases)
@@ -293,7 +316,7 @@ class Star(eqx.Module):
 
         return fun
 
-    def render(self, x: Array, u: Array, phase=0.0):
+    def render(self, x: Array, u: Array = None, phase=0.0):
         """Render the map disk at a given rotation phase.
 
         Parameters
@@ -321,7 +344,9 @@ class Star(eqx.Module):
 
         return projected_map
 
-    def show(self, x: Array, u: Array = None, phase: float = 0.0, ax=None, **kwargs):
+    def show(
+        self, x: Array = None, u: Array = None, phase: float = 0.0, ax=None, **kwargs
+    ):
         """Show the map disk.
 
         Parameters
@@ -339,6 +364,9 @@ class Star(eqx.Module):
 
         if u is None:
             u = ()
+
+        if x is None:
+            x = np.ones(self.n)
 
         kwargs.setdefault("cmap", "magma")
         kwargs.setdefault("origin", "lower")
