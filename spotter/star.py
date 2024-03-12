@@ -19,41 +19,16 @@ def _wrap(*args):
         return new_args
 
 
-class Star(eqx.Module):
-    """An object holding the geometry of the stellar surface map."""
-
-    N: int = 64
-    """HEALPix map nside"""
-    n: int = eqx.field(static=True)
-    """Number of pixels"""
-    phis: ArrayLike = eqx.field(static=True)  # lat
-    """The colatitudes of the pixels"""
-    thetas: ArrayLike = eqx.field(static=True)  # lon
-    """The longitudes of the pixels"""
-
-    def __init__(self, N: int = 64):
-        """An object holding the geometry of the stellar surface map.
-
-        Parameters
-        ----------
-        N : int, optional
-            HEALPix map nside, by default 64
-        """
-        self.N = N
-        self.n = hp.nside2npix(self.N)
-        self.thetas, self.phis = jnp.array(hp.pix2ang(self.N, jnp.arange(self.n)))
-
-
 class Star:
     """An object holding the geometry of the stellar surface map."""
 
     N: int = 64
     """HEALPix map nside"""
-    n: int = eqx.field(static=True)
+    n: int = None
     """Number of pixels"""
-    phis: ArrayLike = eqx.field(static=True)  # lat
+    phis: ArrayLike = None  # lat
     """The colatitudes of the pixels"""
-    thetas: ArrayLike = eqx.field(static=True)  # lon
+    thetas: ArrayLike = None  # lon
     """The longitudes of the pixels"""
 
     def __init__(self, N: int = 64):
@@ -152,7 +127,7 @@ class Star:
     def smooth_spots(self, lat, lon, r, c=12):
         return self._smooth_spots(lat, lon, r, c)
 
-    def masked(self, x: Array, phase: float = 0.0) -> Array:
+    def masked(self, x: Array = None, phase: float = 0.0) -> Array:
         """Returns a map where pixels outside the visible hemisphere
            of the star are set to zero.
 
@@ -168,10 +143,12 @@ class Star:
         Array
             masked map
         """
+        if x is None:
+            x = np.ones(self.n)
         mask = core.hemisphere_mask(self.phis, phase)
         return x * mask
 
-    def limbed(self, x: Array, u: Array, phase=0.0) -> Array:
+    def limbed(self, x: Array = None, u: Array = None, phase=0.0) -> Array:
         """Returns a map multiplied by the polynomial limb law.
 
         Parameters
@@ -188,12 +165,14 @@ class Star:
         Array
             limbed map
         """
+        if x is None:
+            x = np.ones(self.n)
         limb_darkening = core.polynomial_limb_darkening(
             self.phis, self.thetas, u, phase
         )
         return x * limb_darkening
 
-    def masked_limbed(self, x: Array, u: Array, phase=0.0) -> Array:
+    def masked_limbed(self, x: Array = None, u: Array = None, phase=0.0) -> Array:
         """Returns a map where pixels outside the visible hemisphere
            of the star are set to zero and multiplied by the polynomial limb law.
 
@@ -211,6 +190,9 @@ class Star:
         Array
             masked and limbed map
         """
+        if x is None:
+            x = np.ones(self.n)
+
         mask = core.hemisphere_mask(self.phis, phase)
         limb_darkening = core.polynomial_limb_darkening(
             self.phis, self.thetas, u, phase
@@ -392,3 +374,30 @@ class Star:
         theta2 = np.arccos(b - r)
         x[hp.query_strip(self.N, theta1, theta2)] = 1.0
         return x
+
+    def video(self, x, u=None, duration=4, fps=10):
+        import matplotlib.animation as animation
+        import matplotlib.pyplot as plt
+        from IPython import display
+
+        fig, ax = plt.subplots(figsize=(3, 3))
+        im = plt.imshow(self.render(x, u), cmap="magma")
+        plt.axis("off")
+        plt.tight_layout()
+        ax.set_frame_on(False)
+        fig.patch.set_alpha(0.0)
+        frames = duration * fps
+
+        def update(frame):
+            a = im.get_array()
+            a = self.render(x, u, phase=np.pi * 2 * frame / frames)
+            im.set_array(a)
+            return [im]
+
+        ani = animation.FuncAnimation(
+            fig=fig, func=update, frames=frames, interval=1000 / fps
+        )
+        video = ani.to_jshtml(embed_frames=True)
+        html = display.HTML(video)
+        plt.close()
+        return display.display(html)

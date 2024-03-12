@@ -17,13 +17,16 @@ def hemisphere_mask(theta, phase):
     return jnp.where(cond, mask_1, mask_2)
 
 
-def polynomial_limb_darkening(theta, phi, u, phase):
-    theta = jnp.atleast_1d(theta)
-    phi = jnp.atleast_1d(phi)
-    u = jnp.atleast_1d(u)
-    z = jnp.sin(phi) * jnp.cos(theta - phase)
-    terms = jnp.array([un * (1 - z) ** (n + 1) for n, un in enumerate(u)])
-    return 1 - jnp.sum(terms, axis=theta.ndim - 1)
+def polynomial_limb_darkening(theta, phi, u=None, phase=0.0):
+    if u is None:
+        return 1.0
+    else:
+        theta = jnp.atleast_1d(theta)
+        phi = jnp.atleast_1d(phi)
+        u = jnp.atleast_1d(u)
+        z = jnp.sin(phi) * jnp.cos(theta - phase)
+        terms = jnp.array([un * (1 - z) ** (n + 1) for n, un in enumerate(u)])
+        return 1 - jnp.sum(terms, axis=theta.ndim - 1)
 
 
 def projected_area(theta, phi, phase):
