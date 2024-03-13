@@ -1,7 +1,6 @@
 project = "spotter"
-copyright = "2023, Lionel Garcia, Benjamin Rackham"
+copyright = "2023 - 2024, Lionel Garcia, Benjamin Rackham"
 author = "Lionel Garcia, Benjamin Rackham"
-release = "0.0.2"
 
 extensions = [
     "myst_nb",
@@ -39,9 +38,7 @@ myst_enable_extensions = [
 ]
 
 nb_execution_mode = "off"
-html_short_title = "spotter"
-html_title = f"{html_short_title}"
-
+html_logo = "_static/spotter.png"
 html_css_files = ["style.css"]
 myst_url_schemes = ("http", "https")
 

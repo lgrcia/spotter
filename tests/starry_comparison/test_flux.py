@@ -1,10 +1,13 @@
 from collections import defaultdict
 
 import healpy as hp
+import jax
 import numpy as np
 import pytest
 
 from spotter import Star
+
+jax.config.update("jax_enable_x64", True)
 
 
 @pytest.mark.parametrize("deg", (3, 10))
@@ -68,12 +71,12 @@ def test_starry(deg, u):
     mh = mh * (np.nanmax(ims) - np.nanmin(ims))
     mh = mh + np.nanmin(ims)
 
-    star = Star(N=N, u=u)
-    star.map_spot = 1 - mh
+    star = Star(N=N)
+    x = mh
 
     # comparison
     phases = np.linspace(0, 2 * np.pi, 100)
     expected = np.array(ms.flux(theta=np.rad2deg(phases)))
-    calc = star.flux(phases)
+    calc = jax.vmap(star.flux, in_axes=(None, None, 0))(x, u, phases)
 
     np.testing.assert_allclose(calc, expected, atol=1e-4)
