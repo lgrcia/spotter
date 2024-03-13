@@ -1,14 +1,13 @@
 name: spotter/ci
 
 on:
-  pull_request:
+  push:
     branches:
       - main
-    paths-ignore:
-      - '**/__pycache__/**'
-      - '**/.pytest_cache/**'
-
-  # Allows you to run this workflow manually from the Actions tab
+    tags:
+      - "*"
+  pull_request:
+  merge_group:
   workflow_dispatch:
 
 jobs:
@@ -84,7 +83,7 @@ jobs:
       id-token: write
     needs: [tests, build]
     runs-on: ubuntu-latest
-    # if: github.event_name == 'published' && startsWith(github.ref, 'refs/tags/')
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
     steps:
       - uses: actions/download-artifact@v4
         with:
