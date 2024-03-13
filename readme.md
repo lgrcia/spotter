@@ -1,7 +1,7 @@
 # spotter
 
 <p align="center">
-    <img src="docs/source/_static/spotter.png" width="270">
+    <img src="docs/_static/spotter.png" width="270">
 </p>
 
 <p align="center">
