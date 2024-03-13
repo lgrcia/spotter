@@ -1,15 +1,23 @@
 version: 2
 
+submodules:
+  include: all
+
 build:
-  os: "ubuntu-22.04"
+  os: ubuntu-20.04
+  apt_packages:
+    - fonts-liberation
   tools:
-    python: "3.8"
-  jobs:
-    post_create_environment:
-      - pip install poetry
-      - poetry config virtualenvs.create false
-    post_install:
-      - poetry install --with docs
+    python: "3.10"
+
+python:
+  install:
+    - method: pip
+      path: .
+      extra_requirements:
+        - docs
 
 sphinx:
+  builder: dirhtml
   configuration: docs/conf.py
+  fail_on_warning: false

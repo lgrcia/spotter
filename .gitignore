@@ -58,7 +58,7 @@ dev
 **.array
 
 ## docs
-docs/_build
 docs/**/generated
-_docs
 **/.ipynb_checkpoints
+build
+jupyter_execute
