@@ -4,7 +4,8 @@ on:
   merge_group:
   workflow_dispatch:
   pull_request:
-  publish:
+  release:
+    types: [published]
     branches:
       - main
     tags:
