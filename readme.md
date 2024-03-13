@@ -1,5 +1,3 @@
-> Work in progress, beta released
-
 # spotter
 
 <p align="center">
