@@ -356,7 +356,7 @@ class Star:
 
         img = self.render(x, u, phase)
         ax.axis(False)
-        ax.imshow(img, **kwargs)
+        ax.imshow(img, extent=(-1, 1, -1, 1), **kwargs)
 
     def transit_chord(self, r: float, b: float = 0.0):
         """
