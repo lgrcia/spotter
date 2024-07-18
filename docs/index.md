@@ -17,12 +17,21 @@ Use at your own risk as the code is completely untested and its API subject to c
 - Modeling of any active regions with their limb laws (e.g. limb-brightened faculae)
 - GPU compatible <span style="color:grey">
 - Possibility to input any stellar spectra model
+- Gaussian processes on the sphere
 
 ```{toctree}
 :maxdepth: 1
 :caption: Get started
 
 notebooks/introduction
+```
+
+```{toctree}
+:maxdepth: 1
+:caption: Tutorials
+
+notebooks/gps
+notebooks/ensemble
 ```
 
 ```{toctree}
