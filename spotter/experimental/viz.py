@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.spatial.transform import Rotation
 
-from spotter.experimental.core import render
+from spotter.experimental import core
 
 _DEFAULT_CMAP = "magma"
 
@@ -45,7 +45,7 @@ def lon_lat_lines(n: int = 6, pts: int = 100, radius: float = 1.0):
 def rotation(inc, obl, theta):
     u = [np.cos(obl), np.sin(obl), 0]
     u /= np.linalg.norm(u)
-    u *= -(inc - np.pi / 2)
+    u *= inc
 
     R = Rotation.from_rotvec(u)
     R *= Rotation.from_rotvec([0, 0, obl])
@@ -95,7 +95,7 @@ def graticule(
 ):
     import matplotlib.pyplot as plt
 
-    _inc = np.pi / 2 - inc
+    _inc = core.inclination_convention(inc)
 
     if ax is None:
         ax = plt.gca()
@@ -130,7 +130,7 @@ def show(y, inclination=0.0, u=None, phase=0.0, ax=None, **kwargs):
     kwargs.setdefault("vmax", 1.0)
     ax = ax or plt.gca()
 
-    img = render(y, inclination, u, phase)
+    img = core.render(y, inclination, u, phase)
     ax.axis(False)
     ax.imshow(img, extent=(-1, 1, -1, 1), **kwargs)
     graticule(inclination, 0.0, phase, ax=ax)
@@ -147,7 +147,9 @@ def video(y, inclination=None, u=None, duration=4, fps=10, **kwargs):
     kwargs.setdefault("vmax", 1.0)
 
     fig, ax = plt.subplots(figsize=(3, 3))
-    im = plt.imshow(render(y, inclination, u, 0.0), extent=(-1, 1, -1, 1), **kwargs)
+    im = plt.imshow(
+        core.render(y, inclination, u, 0.0), extent=(-1, 1, -1, 1), **kwargs
+    )
     plt.axis("off")
     plt.tight_layout()
     ax.set_frame_on(False)
@@ -157,7 +159,7 @@ def video(y, inclination=None, u=None, duration=4, fps=10, **kwargs):
     def update(frame):
         a = im.get_array()
         phase = np.pi * 2 * frame / frames
-        a = render(y, inclination, u, phase)
+        a = core.render(y, inclination, u, phase)
         for art in list(ax.lines):
             art.remove()
         graticule(inclination, ax=ax, theta=phase, white_contour=False)

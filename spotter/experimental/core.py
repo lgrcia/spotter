@@ -10,15 +10,21 @@ def distance(X, x):
     )
 
 
+def inclination_convention(theta):
+    return theta
+
+
 def equator_coords(phi, i):
-    x = jnp.cos(i) * jnp.cos(phi)
-    y = jnp.cos(i) * jnp.sin(phi)
-    z = jnp.sin(i) * jnp.ones_like(phi)
+    x = jnp.cos(inclination_convention(i)) * jnp.cos(phi)
+    y = jnp.cos(inclination_convention(i)) * jnp.sin(phi)
+    z = jnp.sin(inclination_convention(i)) * jnp.ones_like(phi)
 
     return jnp.array([x, y, z])
 
 
-def mask_projected_limb(X, phase, inclination=0.0, u=None):
+def mask_projected_limb(X, phase, inclination=None, u=None):
+    if inclination is None:
+        inclination = jnp.pi / 2
     d = distance(X, equator_coords(phase, inclination))
     mask = d < jnp.pi / 2
     z = jnp.cos(d)
@@ -48,12 +54,15 @@ def vec(N_or_y):
     return jnp.array(hp.pix2vec(N, range(n))).T
 
 
-def flux(y, inclination, u, phase):
-    X = vec(y)
+def design_matrix(N_or_y, inclination, u, phase):
+    X = vec(N_or_y)
     mask, projected_area, limb_darkening = mask_projected_limb(X, phase, inclination, u)
-    limbed = y * limb_darkening
     geometry = mask * projected_area
-    return jnp.pi * (limbed * geometry).sum() / (geometry * limb_darkening).sum()
+    return jnp.pi * limb_darkening * geometry / (geometry * limb_darkening).sum()
+
+
+def flux(y, inclination, u, phase):
+    return design_matrix(y, inclination, u, phase) @ y
 
 
 def spherical_to_cartesian(theta, phi):
@@ -76,9 +85,9 @@ def render(y, inclination, u, phase):
     X = vec(y)
 
     limb_darkening = mask_projected_limb(X, phase, inclination, u)[2]
-    rotated = hp.Rotator(rot=[phase, inclination], deg=False).rotate_map_pixel(
-        y * limb_darkening
-    )
+    rotated = hp.Rotator(
+        rot=[phase, inclination_convention(inclination)], deg=False
+    ).rotate_map_pixel(y * limb_darkening)
 
     projected_map = hp.orthview(rotated, half_sky=True, return_projected_map=True)
     plt.close()
