@@ -2,7 +2,7 @@
 
 import nox
 
-ALL_PYTHON_VS = ["3.9", "3.11"]
+ALL_PYTHON_VS = ["3.10", "3.11"]
 
 
 @nox.session(python=ALL_PYTHON_VS)
@@ -11,11 +11,9 @@ def test(session):
     session.run("pytest", *session.posargs)
 
 
-@nox.session(python=["3.9"])
+@nox.session(python=["3.10"])
 def comparison(session):
-    session.install(".[test,comparison]", "numpy<1.22")
-    session.run("python", "-c", "import starry")
-    session.run("python", "-c", "import theano")
+    session.install(".[test,comparison]")
     if session.posargs:
         args = session.posargs
     else:
