@@ -1,92 +1,31 @@
-from typing import Any
+from collections import defaultdict
 
 import healpy as hp
 import numpy as np
 
-from spotter import core
 
-Array = Any
+def ylm2healpix(y):
+    # Edmonds to Condon-Shortley phase convention
+    lmax = int(np.floor(np.sqrt(len(y))))
 
+    _hy = defaultdict(lambda: 0 + 0j)
 
-def show_map(
-    x,
-    u=None,
-    phase: float = 0,
-    return_img: bool = False,
-    chord: float = None,
-    ax=None,
-    **kwargs,
-):
-    """
-    Show the stellar disk at a given rotation phase.
+    i = 0
 
-    Parameters
-    ----------
-    phase : float, optional
-        The rotation phase of the stellar disk. Defaults to 0.
-    grid : bool, optional
-        Whether to display a grid on the plot. Defaults to False.
-    return_img : bool, optional
-        Whether to return the projected map as an image. Defaults to False.
-    chord : float, optional
-        An additional contrast applied on the map to visualize the
-        position of the transit chord. Defaults to `None`.
+    for l in range(0, lmax):
+        for m in range(-l, l + 1):
+            j = hp.sphtfunc.Alm.getidx(lmax, l, np.abs(m))
+            if m < 0:
+                _hy[j] += 1j * y[i] / (np.sqrt(2) * (-1) ** m)
+            elif m == 0:
+                _hy[j] += y[i]
+            else:
+                _hy[j] += y[i] / (np.sqrt(2) * (-1) ** m)
+            i += 1
 
-    Returns
-    -------
-    numpy.ndarray or None
-        If `return_img` is True, returns the projected map as a numpy array.
-        Otherwise, returns None.
+    hn = hp.sphtfunc.Alm.getsize(lmax)
+    hy = np.zeros(hn, dtype=np.complex128)
+    for i in range(hn):
+        hy[i] = _hy[i]
 
-    Examples
-    --------
-    To show the stellar disk
-
-    >>> from spotter import Star
-    >>> star = Star(u=[0.1, 0.2], N=2**7, b=-0.7, r=0.06)
-    >>> star.show()
-
-    .. plot::
-        :context:
-
-        import matplotlib.pyplot as plt
-        from spotter import Star
-        star = Star(u=[0.1, 0.2], N=2**7, b=-0.7, r=0.06)
-        star.show()
-        plt.show()
-
-    To visualize the transit chord
-
-    >>> star.show(chord=0.1)
-
-    .. plot::
-        :context:
-
-        star.show(chord=0.1)
-        plt.show()
-
-    """
-    import matplotlib.pyplot as plt
-
-    if u is None:
-        u = ()
-
-    kwargs.setdefault("cmap", "magma")
-    kwargs.setdefault("origin", "lower")
-    ax = ax or plt.gca()
-
-    limb_darkening = core.polynomial_limb_darkening(self.phis, self.thetas, u, phase)
-    limbed = x * limb_darkening * mask
-    rotated = hp.Rotator(rot=[phase, 0], deg=False).rotate_map_pixel(limbed)
-
-    projected_map = hp.orthview(
-        rotated * self.polynomial_limb_darkening(self.u, np.array([0]))[0],
-        half_sky=True,
-        return_projected_map=True,
-    )
-    plt.close()
-    if return_img:
-        return projected_map
-    else:
-        ax.axis(False)
-        ax.imshow(projected_map, **kwargs)
+    return hy
