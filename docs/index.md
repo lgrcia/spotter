@@ -4,9 +4,6 @@
 
 ---
 
-```{warning}
-Use at your own risk as the code is completely untested and its API subject to change.
-```
 
 *spotter* uses the [HEALPix](https://healpix.sourceforge.io/) subdivision scheme and is powered by the high-performance numerical package [JAX](https://jax.readthedocs.io/en/latest/notebooks/quickstart.html), enabling its use on GPUs.
 
