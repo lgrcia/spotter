@@ -1,82 +1,37 @@
-from collections import defaultdict
-
 import healpy as hp
 import jax
 import numpy as np
 import pytest
 
 from spotter import Star
+from spotter.light_curves import light_curve
+from spotter.utils import ylm2healpix
 
-jax.config.update("jax_enable_x64", True)
 
-
-@pytest.mark.parametrize("deg", (3, 10))
+@pytest.mark.parametrize("deg", (3, 7))
 @pytest.mark.parametrize("u", ([], [0.1, 0.4]))
 def test_starry(deg, u):
-    starry = pytest.importorskip("starry")
-    starry.config.lazy = False
+    pytest.importorskip("jaxoplanet")
+    from jaxoplanet.experimental.starry import Surface, Ylm, rotation
+    from jaxoplanet.experimental.starry.light_curves import surface_light_curve
 
-    # starry map with random coefficients
-    np.random.seed(deg + len(u))
-    y = np.random.randn((deg + 1) ** 2)
-    y[0] = 1.0
-    y[1:] *= 1e-2
-    inc = np.pi / 2
-    ms = starry.Map(ydeg=deg, udeg=len(u), inc=np.rad2deg(inc))
-    if len(u) > 0:
-        ms[1:] = u
-    ms[:, :] = y
+    y = np.array([1, *(1e-2 * np.random.randn((deg + 1) ** 2 - 1))])
 
     # rotation to map healpix
-    _m = starry._core.core.OpsYlm(deg, 0, 0, 1)
-    ry = _m.dotR([y], 0.0, 1.0, 0.0, np.pi / 2)[0]
-    ry = _m.dotR([ry], 1.0, 0.0, 0.0, -np.pi / 2)[0]
-    ry = _m.dotR([ry], 0.0, 0.0, 1.0, np.pi)[0]
-
-    def starry2healpy(y):
-        # Edmonds to Condon-Shortley phase convention
-        lmax = int(np.floor(np.sqrt(len(y))))
-
-        _hy = defaultdict(lambda: 0 + 0j)
-
-        i = 0
-
-        for l in range(0, lmax):
-            for m in range(-l, l + 1):
-                j = hp.sphtfunc.Alm.getidx(lmax, l, np.abs(m))
-                if m < 0:
-                    _hy[j] += 1j * y[i] / (np.sqrt(2) * (-1) ** m)
-                elif m == 0:
-                    _hy[j] += y[i]
-                else:
-                    _hy[j] += y[i] / (np.sqrt(2) * (-1) ** m)
-                i += 1
-
-        hn = hp.sphtfunc.Alm.getsize(lmax)
-        hy = np.zeros(hn, dtype=np.complex128)
-        for i in range(hn):
-            hy[i] = _hy[i]
-
-        return hy
+    ry = rotation.dot_rotation_matrix(deg, None, 1.0, None, np.pi / 2)(y)
+    ry = rotation.dot_rotation_matrix(deg, 1.0, None, None, -np.pi / 2)(ry)
+    ry = rotation.dot_rotation_matrix(deg, None, None, 1.0, np.pi)(ry)
 
     # starry to healpix to spotter
     N = 2**7
-    y2 = starry2healpy(ry)
+    y2 = ylm2healpix(ry)
     mh = hp.alm2map(y2, nside=N)
 
-    # mh with same ptp as ims
-    ims = ms.render(projection="moll")
-    mh = mh - np.nanmin(mh)
-    mh = mh / np.nanmax(mh)
-    mh = mh * (np.nanmax(ims) - np.nanmin(ims))
-    mh = mh + np.nanmin(ims)
+    surface = Surface(y=Ylm.from_dense(y), u=u)
+    star = Star(mh, period=2 * np.pi, inc=np.pi / 2, u=u)
 
-    star = Star(N=N)
-    x = mh
-
-    # comparison
     phases = np.linspace(0, 2 * np.pi, 100)
-    expected = np.array(ms.flux(theta=np.rad2deg(phases)))
-    calc = jax.vmap(star.flux, in_axes=(None, None, 0))(x, u, phases)
+    expected = jax.vmap(lambda phi: surface_light_curve(surface, theta=phi))(phases)
+    calc = light_curve(star, phases)
 
-    np.testing.assert_allclose(calc, expected, atol=1e-4)
+    np.testing.assert_allclose(calc / calc.max(), expected / expected.max(), atol=1e-4)

@@ -1,29 +1,33 @@
 [project]
 name = "starspotter"
-version = "0.0.8-beta"
+version = "0.0.9-beta"
 description = "Stellar contamination estimates from rotational light curves"
-authors = [{name="Lionel Garcia"}, {name="Benjamin Rackham"}]
+authors = [{ name = "Lionel Garcia" }, { name = "Benjamin Rackham" }]
 license = "MIT"
 readme = "readme.md"
 requires-python = ">=3.9"
-packages = [{ include = "spotter" },]
-dependencies = ["numpy", "healpy", "jax", "jaxlib"]
+packages = [{ include = "spotter" }]
+dependencies = ["numpy", "healpy", "jax", "jaxlib", "equinox", "tinygp"]
 
 [project.optional-dependencies]
 dev = ["black", "pytest", "nox"]
 test = ["pytest", "pytest-xdist"]
-comparison = ["starry", "tqdm", "xarray<2023.10.0", "numpy<1.22"]
+comparison = [
+    "jaxoplanet@git+https://github.com/exoplanet-dev/jaxoplanet#feat-starry-out-of-experimental",
+]
 docs = [
+    "matplotlib",
     "sphinx",
     "docutils",
     "jupyterlab",
-    "myst-parser", 
-    "sphinx-book-theme", 
-    "myst-nb", 
+    "myst-parser",
+    "sphinx-book-theme",
+    "myst-nb",
     "sphinx-copybutton",
-    "toml", 
-    "ipywidgets"
-    ]
+    "toml",
+    "ipywidgets",
+    "sphinx-autoapi<3.2.0",
+]
 
 [build-system]
 requires = ["hatchling", "hatch-vcs"]
@@ -31,3 +35,6 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["spotter"]
+
+[tool.hatch.metadata]
+allow-direct-references = true

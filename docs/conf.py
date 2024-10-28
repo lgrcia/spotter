@@ -9,7 +9,7 @@ extensions = [
     "sphinx.ext.napoleon",
     "sphinx.ext.autosummary",
     "sphinx.ext.viewcode",
-    "matplotlib.sphinxext.plot_directive",
+    "autoapi.extension",
 ]
 
 templates_path = ["_templates"]
@@ -37,10 +37,24 @@ myst_enable_extensions = [
     "dollarmath",
 ]
 
-nb_execution_mode = "off"
 html_logo = "_static/spotter.png"
-html_css_files = ["style.css"]
 myst_url_schemes = ("http", "https")
 
 plot_html_show_formats = False
 plot_html_show_source_link = False
+
+autoapi_dirs = ["../spotter"]
+autoapi_ignore = ["*_version*", "*/types*"]
+autoapi_options = [
+    "members",
+    "undoc-members",
+    # "private-members",
+    "show-inheritance",
+    "show-module-summary",
+    "special-members",
+    # "imported-members",
+]
+# autoapi_add_toctree_entry = False
+autoapi_template_dir = "_autoapi_templates"
+
+suppress_warnings = ["autoapi.python_import_resolution"]
