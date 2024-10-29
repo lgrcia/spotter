@@ -86,10 +86,18 @@ def spherical_to_cartesian(theta, phi):
     return jnp.array([x, y, z])
 
 
-def spots(N, latitude, longitude, radius):
+def spot(N, latitude, longitude, radius):
     X = vec(N)
     d = distance(X, spherical_to_cartesian(jnp.pi / 2 - latitude, longitude))
     return d < radius
+
+
+def soft_spot(N, latitude, longitude, radius):
+    X = vec(N)
+    d = distance(X, spherical_to_cartesian(jnp.pi / 2 - latitude, longitude))
+    A = d / (2 * radius)
+    C = 1 / 2
+    return 0.5 * jnp.tanh(C - A) + 0.5 * jnp.tanh(C + A)
 
 
 def render(y, inc=None, u=None, phase=0.0):
@@ -144,3 +152,37 @@ def transit_chord(N, x, r, inc=None):
     _z, _y, _x = vec(N).T
     _x = _x * c - _z * s
     return jnp.abs(_x - x) < r
+
+
+def doppler_shift(theta, period, radius, phase):
+    period_s = period * 24 * 60 * 60
+    omega = jnp.pi * 2 / period_s
+    radius_m = radius * 695700000.0
+    c = 299792458.0
+    radial_velocity = radius_m * omega * jnp.sin(theta - phase)
+    shift = radial_velocity / c
+    return shift
+
+
+def shifted_spectra(spectra, shift):
+    n = jnp.shape(spectra)[1]
+    spectra_fft = jnp.fft.fft(spectra)
+    spectra_fft_shift = jnp.fft.fftshift(spectra_fft)
+    u = jnp.arange(-n / 2, n / 2)
+
+    spectra_fft_shift_ = spectra_fft_shift * jnp.exp(
+        -1j * 2 * jnp.pi * shift * u[None, :] / n
+    )
+    spectra_fft_ = jnp.fft.ifftshift(spectra_fft_shift_, axes=1)
+    return jnp.real(jnp.fft.ifft(spectra_fft_))
+
+
+def integrated_spectrum(N, theta, period, radius, wv, spectra, phase, y):
+    spectra = jnp.atleast_2d(spectra)
+    mask, projected, limb = mask_projected_limb(vec(N), phase)
+    w_shift = doppler_shift(theta, period, radius, phase)
+    dw = wv[1] - wv[0]
+    shift = w_shift[:, None] * wv / dw
+    geometry = projected * mask
+    spectra_shifted = shifted_spectra(spectra, shift) * y[:, None]
+    return jnp.sum(spectra_shifted * geometry[:, None], 0) / jnp.sum(geometry * y)

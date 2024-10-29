@@ -8,13 +8,13 @@ from spotter import core, viz
 
 
 class Star(eqx.Module):
-
-    """Docstring for Star. """
+    """Docstring for Star."""
 
     y: ArrayLike
     u: ArrayLike | None = None
     period: float | None = None
     inc: float | None = None
+    radius: float | None = None
     sides: int = eqx.field(static=True)
     x: np.ndarray = eqx.field(static=True)
 
@@ -24,6 +24,7 @@ class Star(eqx.Module):
         u: ArrayLike | None = None,
         inc: float | None = None,
         period: float | None = None,
+        radius: float | None = None,
     ):
         self.y = y
         self.inc = inc
@@ -31,6 +32,7 @@ class Star(eqx.Module):
         self.period = period
         self.sides = core._N_or_Y_to_N_n(y)[0]
         self.x = core.vec(self.sides)
+        self.radius = radius if radius is not None else 1.0
 
     @property
     def size(self):
