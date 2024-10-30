@@ -97,7 +97,8 @@ def soft_spot(N, latitude, longitude, radius):
     d = distance(X, spherical_to_cartesian(jnp.pi / 2 - latitude, longitude))
     A = d / (2 * radius)
     C = 1 / 2
-    return 0.5 * jnp.tanh(C - A) + 0.5 * jnp.tanh(C + A)
+    profile = 0.5 * jnp.tanh(C - A) + 0.5 * jnp.tanh(C + A)
+    return profile / jnp.max(profile)
 
 
 def render(y, inc=None, u=None, phase=0.0):
