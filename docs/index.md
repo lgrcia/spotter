@@ -23,6 +23,7 @@ notebooks/introduction
 notebooks/surface_gp
 notebooks/ensemble
 notebooks/flux_gp
+notebooks/spectral
 ```
 
 ```{toctree}
