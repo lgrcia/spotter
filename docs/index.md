@@ -22,6 +22,7 @@ notebooks/introduction
 
 notebooks/surface_gp
 notebooks/ensemble
+notebooks/flux_gp
 ```
 
 ```{toctree}
