@@ -160,7 +160,8 @@ def doppler_shift(theta, phi, period, radius, phase):
     omega = jnp.pi * 2 / period_s  # angular velocity
     radius_m = radius * 695700000.0  # convert solar radii to meters
     c = 299792458.0
-    radial_velocity = radius_m * omega * jnp.sin(theta - phase) * np.sin(phi)
+    sin_phi = np.sin(phi)  # numpy here! as phi is static
+    radial_velocity = radius_m * omega * jnp.sin(theta - phase) * sin_phi
     shift = radial_velocity / c
     return shift
 
