@@ -155,12 +155,12 @@ def transit_chord(N, x, r, inc=None):
     return jnp.abs(_x - x) < r
 
 
-def doppler_shift(theta, period, radius, phase):
-    period_s = period * 24 * 60 * 60
-    omega = jnp.pi * 2 / period_s
-    radius_m = radius * 695700000.0
+def doppler_shift(theta, phi, period, radius, phase):
+    period_s = period * 24 * 60 * 60  # convert days to seconds
+    omega = jnp.pi * 2 / period_s  # angular velocity
+    radius_m = radius * 695700000.0  # convert solar radii to meters
     c = 299792458.0
-    radial_velocity = radius_m * omega * jnp.sin(theta - phase)
+    radial_velocity = radius_m * omega * jnp.sin(theta - phase) * np.sin(phi)
     shift = radial_velocity / c
     return shift
 
@@ -178,10 +178,10 @@ def shifted_spectra(spectra, shift):
     return jnp.real(jnp.fft.ifft(spectra_fft_))
 
 
-def integrated_spectrum(N, theta, period, radius, wv, spectra, phase, y):
+def integrated_spectrum(N, theta, phi, period, radius, wv, spectra, phase, y):
     spectra = jnp.atleast_2d(spectra)
     mask, projected, limb = mask_projected_limb(vec(N), phase)
-    w_shift = doppler_shift(theta, period, radius, phase)
+    w_shift = doppler_shift(theta, phi, period, radius, phase)
     dw = wv[1] - wv[0]
     shift = w_shift[:, None] * wv / dw
     geometry = projected * mask
