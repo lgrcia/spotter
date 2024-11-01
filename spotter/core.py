@@ -189,12 +189,15 @@ def shifted_spectra(spectra, shift):
 
 def integrated_spectrum(N, theta, phi, period, radius, wv, spectra, phase, inc):
     spectra = jnp.atleast_2d(spectra)
-    mask, projected, limb = mask_projected_limb(vec(N), phase, inc=inc)
-    w_shift = doppler_shift(theta, phi, period, radius, phase)
-    dw = wv[1] - wv[0]
-    shift = w_shift[:, None] * wv / dw
-    limb_geometry = projected * mask * limb
-    spectra_shifted = shifted_spectra(spectra, shift)
+    if period is None:
+        spectra_shifted = spectra
+    else:
+        mask, projected, limb = mask_projected_limb(vec(N), phase, inc=inc)
+        w_shift = doppler_shift(theta, phi, period, radius, phase)
+        dw = wv[1] - wv[0]
+        shift = w_shift[:, None] * wv / dw
+        limb_geometry = projected * mask * limb
+        spectra_shifted = shifted_spectra(spectra, shift)
     return jnp.sum(spectra_shifted * limb_geometry[:, None], 0) / jnp.sum(
         limb_geometry[:, None] * spectra[None, :]
     )
