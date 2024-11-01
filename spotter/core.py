@@ -86,10 +86,19 @@ def spherical_to_cartesian(theta, phi):
     return jnp.array([x, y, z])
 
 
-def spots(N, latitude, longitude, radius):
+def spot(N, latitude, longitude, radius):
     X = vec(N)
     d = distance(X, spherical_to_cartesian(jnp.pi / 2 - latitude, longitude))
     return d < radius
+
+
+def soft_spot(N, latitude, longitude, radius):
+    X = vec(N)
+    d = distance(X, spherical_to_cartesian(jnp.pi / 2 - latitude, longitude))
+    A = d / (2 * radius)
+    C = 1 / 2
+    profile = 0.5 * jnp.tanh(C - A) + 0.5 * jnp.tanh(C + A)
+    return profile / jnp.max(profile)
 
 
 def render(y, inc=None, u=None, phase=0.0):
@@ -144,3 +153,39 @@ def transit_chord(N, x, r, inc=None):
     _z, _y, _x = vec(N).T
     _x = _x * c - _z * s
     return jnp.abs(_x - x) < r
+
+
+def doppler_shift(theta, phi, period, radius, phase):
+    period_s = period * 24 * 60 * 60  # convert days to seconds
+    omega = jnp.pi * 2 / period_s  # angular velocity
+    radius_m = radius * 695700000.0  # convert solar radii to meters
+    c = 299792458.0
+    sin_phi = np.sin(phi)  # numpy here! as phi is static
+    radial_velocity = radius_m * omega * jnp.sin(theta - phase) * sin_phi
+    shift = radial_velocity / c
+    return shift
+
+
+def shifted_spectra(spectra, shift):
+    _, n_wavelength = spectra.shape
+    spectra_ft = jnp.fft.fft(spectra, axis=1)
+    k = np.fft.fftfreq(n_wavelength).reshape(1, -1)
+    phase_shift = jnp.exp(-2j * np.pi * k * shift)
+    shifted = jnp.fft.ifft(spectra_ft * phase_shift, axis=1)
+    return jnp.real(shifted)
+
+
+def integrated_spectrum(N, theta, phi, period, radius, wv, spectra, phase, inc):
+    spectra = jnp.atleast_2d(spectra)
+    if period is None:
+        spectra_shifted = spectra
+    else:
+        mask, projected, limb = mask_projected_limb(vec(N), phase, inc=inc)
+        w_shift = doppler_shift(theta, phi, period, radius, phase)
+        dw = wv[1] - wv[0]
+        shift = w_shift[:, None] * wv / dw
+        limb_geometry = projected * mask * limb
+        spectra_shifted = shifted_spectra(spectra, shift)
+    return jnp.sum(spectra_shifted * limb_geometry[:, None], 0) / jnp.sum(
+        limb_geometry[:, None] * spectra[None, :]
+    )

@@ -27,7 +27,7 @@ source_suffix = {
 root_doc = "index"
 
 html_theme_options = {
-    "repository_url": "https://github.com/lgrcia/prose",
+    "repository_url": "https://github.com/lgrcia/spotter",
     "use_repository_button": True,
 }
 

@@ -15,6 +15,13 @@ test = ["pytest", "pytest-xdist"]
 comparison = [
     "jaxoplanet@git+https://github.com/exoplanet-dev/jaxoplanet#feat-starry-out-of-experimental",
 ]
+compare_starry = [
+    "starry",
+    "exoplanet-core",
+    "numpy<1.22",
+    "xarray<2023.10.0",
+    "tqdm",
+]
 docs = [
     "matplotlib",
     "sphinx",
