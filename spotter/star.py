@@ -30,7 +30,7 @@ class Star(eqx.Module):
         self.inc = inc
         self.u = u
         self.period = period
-        self.sides = core._N_or_Y_to_N_n(y)[0]
+        self.sides = core._N_or_Y_to_N_n(self.y)[0]
         self.x = core.vec(self.sides)
         self.radius = radius if radius is not None else 1.0
 
@@ -84,13 +84,16 @@ class Star(eqx.Module):
     def __rsub__(self, other):
         return self.__sub__(other)
 
+    def set_y(self, y):
+        return Star(y, self.u, self.inc, self.period, self.radius)
 
-def show(star: Star, time: ArrayLike = 0.0, ax=None, **kwargs):
+
+def show(star: Star, phase: ArrayLike = 0.0, ax=None, **kwargs):
     viz.show(
         star.y,
         star.inc if star.inc is not None else np.pi / 2,
         star.u,
-        star.phase(time),
+        phase,
         ax=ax,
         **kwargs,
     )

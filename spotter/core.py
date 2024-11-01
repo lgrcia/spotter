@@ -167,24 +167,34 @@ def doppler_shift(theta, phi, period, radius, phase):
 
 
 def shifted_spectra(spectra, shift):
-    n = jnp.shape(spectra)[1]
-    spectra_fft = jnp.fft.fft(spectra)
-    spectra_fft_shift = jnp.fft.fftshift(spectra_fft)
-    u = jnp.arange(-n / 2, n / 2)
+    n_spectra, n_wavelength = spectra.shape
 
-    spectra_fft_shift_ = spectra_fft_shift * jnp.exp(
-        -1j * 2 * jnp.pi * shift * u[None, :] / n
-    )
-    spectra_fft_ = jnp.fft.ifftshift(spectra_fft_shift_, axes=1)
-    return jnp.real(jnp.fft.ifft(spectra_fft_))
+    # Fourier transform along the wavelength axis (axis=1) for each spectrum independently
+    spectra_ft = np.fft.fft(spectra, axis=1)
+
+    # Generate the frequency indices for each element along the wavelength axis
+    k = np.fft.fftfreq(n_wavelength).reshape(
+        1, -1
+    )  # Shape (1, n_wavelength) to broadcast along rows
+
+    # Compute the phase shift matrix for each element in shift
+    phase_shift = np.exp(-2j * np.pi * k * shift)  # Shape (n_spectra, n_wavelength)
+
+    # Apply the phase shift and inverse Fourier transform
+    shifted = np.fft.ifft(spectra_ft * phase_shift, axis=1)
+
+    # Return the real part, assuming the input was real
+    return np.real(shifted)
 
 
-def integrated_spectrum(N, theta, phi, period, radius, wv, spectra, phase, y):
+def integrated_spectrum(N, theta, phi, period, radius, wv, spectra, phase, inc):
     spectra = jnp.atleast_2d(spectra)
-    mask, projected, limb = mask_projected_limb(vec(N), phase)
+    mask, projected, limb = mask_projected_limb(vec(N), phase, inc=inc)
     w_shift = doppler_shift(theta, phi, period, radius, phase)
     dw = wv[1] - wv[0]
     shift = w_shift[:, None] * wv / dw
-    geometry = projected * mask
-    spectra_shifted = shifted_spectra(spectra, shift) * y[:, None]
-    return jnp.sum(spectra_shifted * geometry[:, None], 0) / jnp.sum(geometry * y)
+    limb_geometry = projected * mask * limb
+    spectra_shifted = shifted_spectra(spectra, shift)
+    return jnp.sum(spectra_shifted * limb_geometry[:, None], 0) / jnp.sum(
+        limb_geometry[:, None] * spectra[None, :]
+    )
