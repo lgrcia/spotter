@@ -185,7 +185,7 @@ def integrated_spectrum(N, theta, phi, period, radius, wv, spectra, phase, inc):
         dw = wv[1] - wv[0]
         shift = w_shift[:, None] * wv / dw
         limb_geometry = projected * mask * limb
-        spectra_shifted = shifted_spectra(spectra, shift)
+        spectra_shifted = shifted_spectra(spectra.T, shift)
     return jnp.sum(spectra_shifted * limb_geometry[:, None], 0) / jnp.sum(
-        limb_geometry[:, None] * spectra[None, :]
+        limb_geometry[:, None] * spectra.T
     )

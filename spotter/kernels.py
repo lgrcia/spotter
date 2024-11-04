@@ -5,6 +5,8 @@ from tinygp import kernels
 
 
 class GreatCircleDistance(kernels.stationary.Distance):
+    """Compute the great-circle distance between two 3-vectors."""
+
     def distance(self, X1, X2):
         if jnp.shape(X1) != (3,) or jnp.shape(X2) != (3,):
             raise ValueError(
@@ -14,6 +16,10 @@ class GreatCircleDistance(kernels.stationary.Distance):
 
 
 class ActiveLatitude(kernels.Kernel):
+    """A kernel describing the correlation between pixels values on a sphere whose
+    intensity is modulated by the latitude of the pixel.
+    """
+
     kernel: kernels.Kernel
     latitude: jax.Array
     sigma: jax.Array
