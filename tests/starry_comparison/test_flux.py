@@ -32,6 +32,6 @@ def test_starry(deg, u):
 
     phases = np.linspace(0, 2 * np.pi, 100)
     expected = jax.vmap(lambda phi: surface_light_curve(surface, theta=phi))(phases)
-    calc = light_curve(star, phases)
+    calc = light_curve(star, phases)[0]
 
     np.testing.assert_allclose(calc / calc.max(), expected / expected.max(), atol=1e-4)
