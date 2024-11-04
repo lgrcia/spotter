@@ -28,20 +28,12 @@ class Star(eqx.Module):
         wv: float | None = None,
     ):
         self.y = jnp.atleast_2d(y)
-        self.u = jnp.atleast_2d(u)
+        self.u = jnp.atleast_2d(u) if u is not None else None
         self.inc = inc
         self.period = period
-        self.sides = core._N_or_Y_to_N_n(self.y0)[0]
+        self.sides = core._N_or_Y_to_N_n(self.y[0])[0]
         self.radius = radius if radius is not None else 1.0
         self.wv = wv
-
-    @property
-    def y0(self):
-        return self.y[0]
-
-    @property
-    def u0(self):
-        return self.u[0]
 
     @property
     def x(self):
@@ -118,9 +110,9 @@ class Star(eqx.Module):
 
 def show(star: Star, phase: ArrayLike = 0.0, ax=None, **kwargs):
     viz.show(
-        star.y0,
+        star.y[0],
         star.inc if star.inc is not None else np.pi / 2,
-        star.u0,
+        star.u[0] if star.u is not None else None,
         phase,
         ax=ax,
         **kwargs,
@@ -129,9 +121,9 @@ def show(star: Star, phase: ArrayLike = 0.0, ax=None, **kwargs):
 
 def video(star, duration=4, fps=10, **kwargs):
     viz.video(
-        star.y0,
+        star.y[0],
         star.inc if star.inc is not None else np.pi / 2,
-        star.u0,
+        star.u[0] if star.u is not None else None,
         duration=duration,
         fps=fps,
         **kwargs,
