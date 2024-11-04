@@ -11,6 +11,20 @@ from spotter.star import Star, transited_star
 
 @partial(jnp.vectorize, excluded=(0,), signature="()->(m,n)")
 def design_matrix(star: Star, time: ArrayLike) -> ArrayLike:
+    """Design matrix for rotating Star.
+
+    Parameters
+    ----------
+    star : Star
+        Star object.
+    time : ArrayLike
+        Time array in days.
+
+    Returns
+    -------
+    ArrayLike
+        Design matrix.
+    """
     if star.u is not None:
         if len(star.y) == 1:
             return jax.vmap(
@@ -34,6 +48,21 @@ def design_matrix(star: Star, time: ArrayLike) -> ArrayLike:
 
 
 def light_curve(star: Star, time: ArrayLike) -> ArrayLike:
+    """Light curve of a rotating Star.
+
+    Parameters
+    ----------
+    star : Star
+        Star object.
+    time : ArrayLike
+        Time array in days.
+
+    Returns
+    -------
+    ArrayLike
+        Light curve array.
+    """
+
     def impl(star, time):
         return jnp.einsum("ij,ij->i", design_matrix(star, time), star.y)
 
@@ -42,5 +71,27 @@ def light_curve(star: Star, time: ArrayLike) -> ArrayLike:
     )
 
 
-def transit_light_curve(star, x=0.0, y=0.0, r=0.0, phase=0.0):
-    return light_curve(transited_star(star, x, y, r), phase)
+def transit_light_curve(
+    star: Star, x: float = 0.0, y: float = 0.0, r: float = 0.0, time: float = 0.0
+):
+    """Light curve of a transited Star.
+
+    Parameters
+    ----------
+    star : Star
+        Star object.
+    x : float, optional
+        x coordinate of the center of the disk, by default 0.0.
+    y : float, optional
+        y coordinate of the center of the disk, by default 0.0.
+    r : float, optional
+        Radius of the disk, by default 0.0.
+    time : float, optional
+        Time array in days. by default 0.0.
+
+    Returns
+    -------
+    ArrayLike
+        Light curve array.
+    """
+    return light_curve(transited_star(star, x, y, r), star.phase(time))
