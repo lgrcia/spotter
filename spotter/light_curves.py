@@ -17,9 +17,16 @@ def design_matrix(star: Star, time: ArrayLike) -> ArrayLike:
                 lambda u: core.design_matrix(star.y[0], star.phase(time), star.inc, u)
             )(star.u)
         else:
-            return jax.vmap(
-                lambda y, u: core.design_matrix(y, star.phase(time), star.inc, u)
-            )(star.y, star.u)
+            if len(star.u) == 1:
+                return jax.vmap(
+                    lambda y: core.design_matrix(
+                        y, star.phase(time), star.inc, star.u[0]
+                    )
+                )(star.y)
+            else:
+                return jax.vmap(
+                    lambda y, u: core.design_matrix(y, star.phase(time), star.inc, u)
+                )(star.y, star.u)
     else:
         return jax.vmap(
             lambda y: core.design_matrix(y, star.phase(time), star.inc, star.u)
