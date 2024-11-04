@@ -15,24 +15,37 @@ class Star(eqx.Module):
     period: float | None = None
     inc: float | None = None
     radius: float | None = None
+    wv: float | None = None
     sides: int = eqx.field(static=True)
-    x: np.ndarray = eqx.field(static=True)
 
     def __init__(
         self,
-        y: ArrayLike,
+        y: ArrayLike | None = None,
         u: ArrayLike | None = None,
         inc: float | None = None,
         period: float | None = None,
         radius: float | None = None,
+        wv: float | None = None,
     ):
-        self.y = y
+        self.y = jnp.atleast_2d(y)
+        self.u = jnp.atleast_2d(u)
         self.inc = inc
-        self.u = u
         self.period = period
-        self.sides = core._N_or_Y_to_N_n(self.y)[0]
-        self.x = core.vec(self.sides)
+        self.sides = core._N_or_Y_to_N_n(self.y0)[0]
         self.radius = radius if radius is not None else 1.0
+        self.wv = wv
+
+    @property
+    def y0(self):
+        return self.y[0]
+
+    @property
+    def u0(self):
+        return self.u[0]
+
+    @property
+    def x(self):
+        return core.vec(self.sides)
 
     @property
     def size(self):
@@ -41,6 +54,9 @@ class Star(eqx.Module):
     @property
     def resolution(self):
         return hp.nside2resol(self.sides)
+
+    def __getitem__(self, key):
+        return self.set(y=self.y[key])
 
     @classmethod
     def from_sides(cls, sides: int, **kwargs):
@@ -84,15 +100,27 @@ class Star(eqx.Module):
     def __rsub__(self, other):
         return self.__sub__(other)
 
+    def set(self, **kwargs):
+        current = {
+            "y": self.y,
+            "u": self.u,
+            "inc": self.inc,
+            "period": self.period,
+            "radius": self.radius,
+            "wv": self.wv,
+        }
+        current.update(kwargs)
+        return Star(**current)
+
     def set_y(self, y):
-        return Star(y, self.u, self.inc, self.period, self.radius)
+        return self.set(y=y)
 
 
 def show(star: Star, phase: ArrayLike = 0.0, ax=None, **kwargs):
     viz.show(
-        star.y,
+        star.y0,
         star.inc if star.inc is not None else np.pi / 2,
-        star.u,
+        star.u0,
         phase,
         ax=ax,
         **kwargs,
@@ -101,9 +129,9 @@ def show(star: Star, phase: ArrayLike = 0.0, ax=None, **kwargs):
 
 def video(star, duration=4, fps=10, **kwargs):
     viz.video(
-        star.y,
+        star.y0,
         star.inc if star.inc is not None else np.pi / 2,
-        star.u,
+        star.u0,
         duration=duration,
         fps=fps,
         **kwargs,
