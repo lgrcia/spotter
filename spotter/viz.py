@@ -131,7 +131,10 @@ def show(y, inc=np.pi / 2, u=None, phase=0.0, ax=None, **kwargs):
     ax = ax or plt.gca()
 
     img = core.render(y, inc, u, phase)
-    ax.axis(False)
+    plt.setp(ax.spines.values(), visible=False)
+    ax.tick_params(left=False, labelleft=False)
+    ax.tick_params(bottom=False, labelbottom=False)
+    ax.patch.set_visible(False)
     ax.imshow(img, extent=(-1, 1, -1, 1), **kwargs)
     graticule(inc, 0.0, phase, ax=ax)
 
