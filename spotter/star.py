@@ -8,9 +8,9 @@ from spotter import core, viz
 
 
 class Star(eqx.Module):
-    """A Star object whose surface is describe by Healpix map(s).
+    """A Star object whose surface is describe by HEALPix map(s).
 
-    The Healpix maps can be a 2D array with a shape of (wavelengths, pixels), or a
+    The HEALPix maps can be a 2D array with a shape of (wavelengths, pixels), or a
     1D array with a shape of (pixels).
 
     When providing polynomial limb darkening coefficients, different options are possible:
@@ -23,7 +23,7 @@ class Star(eqx.Module):
     Parameters
     ----------
     y : ArrayLike | None, optional
-        Healpix map of the star, with shape (pixels,) or (wavelengths, pixels). Must be provided.
+        HEALPix map of the star, with shape (pixels,) or (wavelengths, pixels). Must be provided.
     u : ArrayLike | None, optional
         Polynomial limb darkening coefficients with shape (order,) or (wavelengths, order). By default None.
         If provided, must either be coefficients applied to all wavelengths, or have the same length as y (
@@ -40,7 +40,7 @@ class Star(eqx.Module):
     """
 
     y: ArrayLike
-    """Healpix map of the star, with shape (wavelengths, pixels)."""
+    """HEALPix map of the star, with shape (wavelengths, pixels)."""
 
     u: ArrayLike | None = None
     """Polynomial limb darkening coefficients with shape (wavelengths, order)."""
@@ -58,7 +58,7 @@ class Star(eqx.Module):
     """Wavelength of the star maps, in meters."""
 
     sides: int = eqx.field(static=True)
-    """Number of healpix sides."""
+    """Number of HEALPix sides."""
 
     def __init__(
         self,
@@ -102,7 +102,7 @@ class Star(eqx.Module):
         Parameters
         ----------
         sides : int
-            Number of sides of the Healpix map.
+            Number of sides of the HEALPix map.
 
         Returns
         -------

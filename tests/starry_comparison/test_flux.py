@@ -17,12 +17,12 @@ def test_starry(deg, u):
 
     y = np.array([1, *(1e-2 * np.random.randn((deg + 1) ** 2 - 1))])
 
-    # rotation to map healpix
+    # rotation to map HEALPix
     ry = rotation.dot_rotation_matrix(deg, None, 1.0, None, np.pi / 2)(y)
     ry = rotation.dot_rotation_matrix(deg, 1.0, None, None, -np.pi / 2)(ry)
     ry = rotation.dot_rotation_matrix(deg, None, None, 1.0, np.pi)(ry)
 
-    # starry to healpix to spotter
+    # starry to HEALPix to spotter
     N = 2**7
     y2 = ylm2healpix(ry)
     mh = hp.alm2map(y2, nside=N)

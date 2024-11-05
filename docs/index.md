@@ -13,7 +13,9 @@
 :maxdepth: 1
 :caption: Get started
 
+installation
 notebooks/introduction
+notebooks/principle.ipynb
 ```
 
 ```{toctree}
@@ -31,5 +33,4 @@ notebooks/multiband
 :maxdepth: 1
 :caption: Reference
 
-notebooks/rotation.ipynb
 ```
