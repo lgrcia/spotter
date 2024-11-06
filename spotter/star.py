@@ -191,14 +191,14 @@ def show(star: Star, phase: ArrayLike = 0.0, ax=None, **kwargs):
     )
 
 
-def video(star: Star, duration: float = 4.0, fps: int = 10, **kwargs):
+def video(star: Star, duration: int = 4, fps: int = 10, **kwargs):
     """Create a html video of the star map. Only suitable and displayed in jupyter notebooks.
 
     Parameters
     ----------
     star : Star
         Star object to show.
-    duration : float, optional
+    duration : int, optional
         Duration of the video in seconds, by default
     fps : int, optional
         Frames per second of the video, by default 10
