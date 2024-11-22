@@ -1,6 +1,8 @@
 from collections import defaultdict
 
 import healpy as hp
+import jax
+import jax.numpy as jnp
 import numpy as np
 
 
@@ -29,3 +31,7 @@ def ylm2healpix(y):
         hy[i] = _hy[i]
 
     return hy
+
+
+def sigmoid(x, scale=1000):
+    return (jnp.tanh(x * scale / 2) + 1) / 2
