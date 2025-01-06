@@ -47,7 +47,7 @@ def rotation(inc, obl, theta):
     u /= np.linalg.norm(u)
     u *= inc
 
-    R = Rotation.from_rotvec(u)
+    R = Rotation.from_rotvec(np.array(u))
     R *= Rotation.from_rotvec([0, 0, obl])
     R *= Rotation.from_rotvec([np.pi / 2, 0, 0])
     R *= Rotation.from_rotvec([0, 0, -theta])
@@ -121,7 +121,7 @@ def graticule(
         ax.plot(sqrt_radius * np.cos(theta), sqrt_radius * np.sin(theta), c="w", lw=3)
 
 
-def show(y, inc=np.pi / 2, u=None, phase=0.0, ax=None, **kwargs):
+def show(y, inc=np.pi / 2, obl=0.0, u=None, phase=0.0, ax=None, **kwargs):
     import matplotlib.pyplot as plt
 
     kwargs.setdefault("cmap", _DEFAULT_CMAP)
@@ -130,13 +130,13 @@ def show(y, inc=np.pi / 2, u=None, phase=0.0, ax=None, **kwargs):
     # kwargs.setdefault("vmax", 1.0)
     ax = ax or plt.gca()
 
-    img = core.render(y, inc, u, phase)
+    img = core.render(y, inc, u, phase, obl)
     plt.setp(ax.spines.values(), visible=False)
     ax.tick_params(left=False, labelleft=False)
     ax.tick_params(bottom=False, labelbottom=False)
     ax.patch.set_visible(False)
     ax.imshow(img, extent=(-1, 1, -1, 1), **kwargs)
-    graticule(inc, 0.0, phase, ax=ax)
+    graticule(inc, obl, phase, ax=ax)
 
 
 def video(y, inc=None, u=None, duration=4, fps=10, **kwargs):

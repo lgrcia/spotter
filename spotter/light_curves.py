@@ -1,7 +1,6 @@
-import jax
-
 from functools import partial
 
+import jax
 import jax.numpy as jnp
 from jax.typing import ArrayLike
 
@@ -74,8 +73,8 @@ def light_curve(star: Star, time: ArrayLike) -> ArrayLike:
 def transit_light_curve(
     star: Star, x: float = 0.0, y: float = 0.0, r: float = 0.0, time: float = 0.0
 ):
-    """Light curve of a transited Star.
-
+    """Light curve of a transited Star. The x-axis cross the star in the horizontal direction (→),
+    and the y-axis cross the star in the vertical up direction (↑).
     Parameters
     ----------
     star : Star
@@ -94,4 +93,4 @@ def transit_light_curve(
     ArrayLike
         Light curve array.
     """
-    return light_curve(transited_star(star, x, y, r), star.phase(time))
+    return light_curve(transited_star(star, y, x, r), star.phase(time))

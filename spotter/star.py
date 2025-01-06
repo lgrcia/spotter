@@ -1,10 +1,11 @@
 import equinox as eqx
 import healpy as hp
+import jax
 import jax.numpy as jnp
 import numpy as np
 from jax.typing import ArrayLike
 
-from spotter import core, viz
+from spotter import core, utils, viz
 
 
 class Star(eqx.Module):
@@ -51,6 +52,9 @@ class Star(eqx.Module):
     inc: float | None = None
     """Inclination of the star, in radians. 0 is pole-on, pi/2 is equator-on."""
 
+    obl: float | None = None
+    """Obliquity of the star, in radians. 0 is no obliquity, pi/2 is maximum obliquity."""
+
     radius: float | None = None
     """Radius of the star, in solar radii."""
 
@@ -65,6 +69,7 @@ class Star(eqx.Module):
         y: ArrayLike | None = None,
         u: ArrayLike | None = None,
         inc: float | None = None,
+        obl: float | None = None,
         period: float | None = None,
         radius: float | None = None,
         wv: float | None = None,
@@ -72,6 +77,7 @@ class Star(eqx.Module):
         self.y = jnp.atleast_2d(y)
         self.u = jnp.atleast_2d(u) if u is not None else None
         self.inc = inc
+        self.obl = obl
         self.period = period
         self.sides = core._N_or_Y_to_N_n(self.y[0])[0]
         self.radius = radius if radius is not None else 1.0
@@ -124,7 +130,7 @@ class Star(eqx.Module):
             y = self.y * other.y
         else:
             y = self.y * other
-        return self.__class__(y, self.u, self.inc, self.period)
+        return self.set(y=y)
 
     def __rmul__(self, other):
         return self.__mul__(other)
@@ -134,7 +140,7 @@ class Star(eqx.Module):
             y = self.y + other.y
         else:
             y = self.y + other
-        return self.__class__(y, self.u, self.inc, self.period)
+        return self.set(y=y)
 
     def __radd__(self, other):
         return self.__add__(other)
@@ -144,7 +150,7 @@ class Star(eqx.Module):
             y = self.y - other.y
         else:
             y = self.y - other
-        return self.__class__(y, self.u, self.inc, self.period)
+        return self.set(y=y)
 
     def __rsub__(self, other):
         return self.__sub__(other)
@@ -161,6 +167,7 @@ class Star(eqx.Module):
             "y": self.y,
             "u": self.u,
             "inc": self.inc,
+            "obl": self.obl,
             "period": self.period,
             "radius": self.radius,
             "wv": self.wv,
@@ -184,6 +191,7 @@ def show(star: Star, phase: ArrayLike = 0.0, ax=None, **kwargs):
     viz.show(
         star.y[0],
         star.inc if star.inc is not None else np.pi / 2,
+        star.obl if star.obl is not None else 0.0,
         star.u[0] if star.u is not None else None,
         phase,
         ax=ax,
@@ -232,18 +240,24 @@ def transited_star(star: Star, x: float = 0.0, y: float = 0.0, r: float = 0.0):
     Star
         Star object transited by the disk.
     """
-    if star.inc is None:
-        c = 0.0
-        s = 1.0
-    else:
-        c = jnp.sin(star.inc)
-        s = jnp.cos(star.inc)
+    from jax.scipy.spatial.transform import Rotation
+
     _z, _y, _x = core.vec(star.sides).T
-    _x = _x * c - _z * s
-    return (
-        1
-        - (
-            jnp.linalg.norm(jnp.array([_x, _y]) - jnp.array([x, -y])[:, None], axis=0)
-            < r
-        )
-    ) * star
+    v = jnp.stack((_x, _y, _z), axis=-1)
+
+    inc_angle = -jnp.pi / 2 + star.inc if star.inc is not None else 0.0
+    _inc_angle = jnp.where(inc_angle == 0.0, 1.0, inc_angle)
+    _rv = Rotation.from_rotvec([0.0, _inc_angle, 0.0]).apply(v)
+    rv = jnp.where(inc_angle == 0.0, v, _rv)
+
+    if star.obl is not None:
+        obl_angle = jnp.where(star.obl == 0.0, 1.0, star.obl)
+        _rv = Rotation.from_rotvec([0.0, 0.0, obl_angle]).apply(rv)
+        rv = jnp.where(obl_angle == 0.0, v, _rv)
+
+    _x, _y, _ = rv.T
+
+    distance = jnp.linalg.norm(
+        jnp.array([_x, _y]) - jnp.array([x, -y])[:, None], axis=0
+    )
+    return utils.sigmoid(distance - r, 1000.0) * star

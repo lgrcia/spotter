@@ -1,6 +1,6 @@
 [project]
 name = "starspotter"
-version = "0.0.1"
+version = "0.0.2"
 description = "Stellar contamination estimates from rotational light curves"
 authors = [{ name = "Lionel Garcia" }, { name = "Benjamin Rackham" }]
 license = "MIT"
