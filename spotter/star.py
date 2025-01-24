@@ -222,7 +222,9 @@ def video(star: Star, duration: int = 4, fps: int = 10, **kwargs):
     )
 
 
-def transited_star(star: Star, x: float = 0.0, y: float = 0.0, r: float = 0.0):
+def transited_star(
+    star: Star, x: float = 0.0, y: float = 0.0, z: float = 0.0, r: float = 0.0
+):
     """Return a star transited by a circular opaque disk
 
     Parameters
@@ -261,4 +263,7 @@ def transited_star(star: Star, x: float = 0.0, y: float = 0.0, r: float = 0.0):
     distance = jnp.linalg.norm(
         jnp.array([_x, _y]) - jnp.array([x, -y])[:, None], axis=0
     )
-    return utils.sigmoid(distance - r, 1000.0) * star
+
+    spotted_star = utils.sigmoid(distance - r, 1000.0) * star
+
+    return star.set(y=jnp.where(z < 0, star.y, spotted_star.y))
