@@ -214,6 +214,7 @@ def video(star: Star, duration: int = 4, fps: int = 10, **kwargs):
     viz.video(
         star.y[0],
         star.inc if star.inc is not None else np.pi / 2,
+        star.obl if star.obl is not None else 0.0,
         star.u[0] if star.u is not None else None,
         duration=duration,
         fps=fps,
