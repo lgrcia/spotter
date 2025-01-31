@@ -223,7 +223,12 @@ def video(star: Star, duration: int = 4, fps: int = 10, **kwargs):
 
 
 def transited_star(
-    star: Star, x: float = 0.0, y: float = 0.0, z: float = 0.0, r: float = 0.0
+    star: Star,
+    x: float = 0.0,
+    y: float = 0.0,
+    z: float = 0.0,
+    r: float = 0.0,
+    time: float = None,
 ):
     """Return a star transited by a circular opaque disk
 
@@ -248,9 +253,16 @@ def transited_star(
     _z, _y, _x = core.vec(star.sides).T
     v = jnp.stack((_x, _y, _z), axis=-1)
 
+    if time is not None:
+        phase = star.phase(time)
+        _rv = Rotation.from_rotvec([phase, 0.0, 0.0]).apply(v)
+        rv = jnp.where(phase == 0.0, v, _rv)
+    else:
+        rv = v
+
     inc_angle = -jnp.pi / 2 + star.inc if star.inc is not None else 0.0
     _inc_angle = jnp.where(inc_angle == 0.0, 1.0, inc_angle)
-    _rv = Rotation.from_rotvec([0.0, _inc_angle, 0.0]).apply(v)
+    _rv = Rotation.from_rotvec([0.0, _inc_angle, 0.0]).apply(rv)
     rv = jnp.where(inc_angle == 0.0, v, _rv)
 
     if star.obl is not None:
