@@ -1,27 +1,17 @@
 [project]
-name = "starspotter"
-version = "0.0.2"
-description = "Stellar contamination estimates from rotational light curves"
+name = "spotter"
+version = "0.0.3"
+description = "Forward models of fluxes and spectra time-series of non-uniform stars."
 authors = [{ name = "Lionel Garcia" }, { name = "Benjamin Rackham" }]
 license = "MIT"
 readme = "readme.md"
-requires-python = ">=3.9"
-packages = [{ include = "spotter" }]
+requires-python = ">=3.10"
 dependencies = ["numpy", "healpy", "jax", "jaxlib", "equinox", "tinygp"]
 
 [project.optional-dependencies]
 dev = ["black", "pytest", "nox"]
 test = ["pytest", "pytest-xdist"]
-comparison = [
-    "jaxoplanet@git+https://github.com/exoplanet-dev/jaxoplanet#feat-starry-out-of-experimental",
-]
-compare_starry = [
-    "starry",
-    "exoplanet-core",
-    "numpy<1.22",
-    "xarray<2023.10.0",
-    "tqdm",
-]
+comparison = ["jaxoplanet"]
 docs = [
     "matplotlib",
     "sphinx",
