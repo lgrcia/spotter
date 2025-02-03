@@ -84,6 +84,11 @@ class Star(eqx.Module):
         self.wv = wv
 
     @property
+    def N(self):
+        """Return the number of sides of the star map."""
+        return self.sides
+
+    @property
     def x(self):
         """Return the xyz coordinates of the star pixels."""
         return core.vec(self.sides)
@@ -118,7 +123,9 @@ class Star(eqx.Module):
         y = np.ones(core._N_or_Y_to_N_n(sides)[1])
         return cls(y, **kwargs)
 
-    def phase(self, time: ArrayLike) -> ArrayLike:
+    def phase(self, time: ArrayLike | None) -> ArrayLike:
+        if time is None:
+            return 0.0
         return (
             2 * jnp.pi * time / self.period
             if self.period is not None
@@ -174,6 +181,31 @@ class Star(eqx.Module):
         }
         current.update(kwargs)
         return Star(**current)
+
+    def spot(self, lat: float, lon: float, radius: float, sharpness: float = 20):
+        """Return a healpix map with a spot.
+
+        Parameters
+        ----------
+        lat : float
+            Latitude of the spot, in radians.
+        lon : float
+            Longitude of the spot, in radians.
+        radius : float
+            Radius of the spot, in radians.
+        sharpness : float, optional
+            Sharpness of the spot, by default 20
+        Returns
+        -------
+        ArrayLike
+            healpix map with a spot.
+        """
+        return core.spot(self.sides, lat, lon, radius, sharpness=sharpness)
+
+    @property
+    def coords(self):
+        """Return the coordinates of the star pixels."""
+        return core.vec(self.sides)
 
 
 def show(star: Star, phase: ArrayLike = 0.0, ax=None, **kwargs):
