@@ -70,7 +70,7 @@ def light_curve(star: Star, time: ArrayLike) -> ArrayLike:
     )
 
 
-def transit_design_matrix(star, x, y, z, r, time):
+def transit_design_matrix(star, x, y, z, r, time=None):
     X = design_matrix(star, time)
 
     from jax.scipy.spatial.transform import Rotation
@@ -100,7 +100,7 @@ def transit_design_matrix(star, x, y, z, r, time):
 
     transited_y = utils.sigmoid(distance - r, 1000.0)
 
-    return X * jnp.where(z > 0, transited_y, jnp.ones_like(transited_y))
+    return X * jnp.where(z >= 0, transited_y, jnp.ones_like(transited_y))
 
 
 def transit_light_curve(
@@ -109,7 +109,7 @@ def transit_light_curve(
     y: float = 0.0,
     z: float = 0.0,
     r: float = 0.0,
-    time: float = None,
+    time: float = 0.0,
 ):
     """Light curve of a transited Star. The x-axis cross the star in the horizontal direction (→),
     and the y-axis cross the star in the vertical up direction (↑).
