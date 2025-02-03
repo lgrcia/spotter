@@ -133,7 +133,6 @@ def render(y, inc=None, u=None, phase=0.0, obl=0.0):
 
 
 def amplitude(N_or_y, inc=None, u=None, undersampling: int = 3) -> callable:
-
     N, _ = _N_or_Y_to_N_n(N_or_y)
     resolution = hp.nside2resol(N)
     X = vec(N)

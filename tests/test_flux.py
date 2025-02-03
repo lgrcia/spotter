@@ -12,8 +12,9 @@ from spotter.utils import ylm2healpix
 @pytest.mark.parametrize("u", ([], [0.1, 0.4]))
 def test_starry(deg, u):
     pytest.importorskip("jaxoplanet")
-    from jaxoplanet.experimental.starry import Surface, Ylm, rotation
-    from jaxoplanet.experimental.starry.light_curves import surface_light_curve
+    from jaxoplanet.starry import Surface, Ylm
+    from jaxoplanet.starry.core import rotation
+    from jaxoplanet.starry.light_curves import surface_light_curve
 
     y = np.array([1, *(1e-2 * np.random.randn((deg + 1) ** 2 - 1))])
 
