@@ -4,7 +4,7 @@ import jax
 import jax.numpy as jnp
 from jax.typing import ArrayLike
 
-from spotter import core
+from spotter import core, utils
 from spotter.star import Star, transited_star
 
 
@@ -70,8 +70,46 @@ def light_curve(star: Star, time: ArrayLike) -> ArrayLike:
     )
 
 
+def transit_design_matrix(star, x, y, z, r, time=None):
+    X = design_matrix(star, time)
+
+    from jax.scipy.spatial.transform import Rotation
+
+    _z, _y, _x = core.vec(star.sides).T
+    v = jnp.stack((_x, _y, _z), axis=-1)
+
+    phase = star.phase(time)
+    _rv = Rotation.from_rotvec([phase, 0.0, 0.0]).apply(v)
+    rv = jnp.where(phase == 0.0, v, _rv)
+
+    inc_angle = -jnp.pi / 2 + star.inc if star.inc is not None else 0.0
+    _inc_angle = jnp.where(inc_angle == 0.0, 1.0, inc_angle)
+    _rv = Rotation.from_rotvec([0.0, _inc_angle, 0.0]).apply(rv)
+    rv = jnp.where(inc_angle == 0.0, rv, _rv)
+
+    if star.obl is not None:
+        obl_angle = jnp.where(star.obl == 0.0, 1.0, star.obl)
+        _rv = Rotation.from_rotvec([0.0, 0.0, obl_angle]).apply(rv)
+        rv = jnp.where(obl_angle == 0.0, rv, _rv)
+
+    _x, _y, _ = rv.T
+
+    distance = jnp.linalg.norm(
+        jnp.array([_x, _y]) - jnp.array([x, -y])[:, None], axis=0
+    )
+
+    transited_y = utils.sigmoid(distance - r, 1000.0)
+
+    return X * jnp.where(z >= 0, transited_y, jnp.ones_like(transited_y))
+
+
 def transit_light_curve(
-    star: Star, x: float = 0.0, y: float = 0.0, r: float = 0.0, time: float = 0.0
+    star: Star,
+    x: float = 0.0,
+    y: float = 0.0,
+    z: float = 0.0,
+    r: float = 0.0,
+    time: float = 0.0,
 ):
     """Light curve of a transited Star. The x-axis cross the star in the horizontal direction (→),
     and the y-axis cross the star in the vertical up direction (↑).
@@ -93,4 +131,12 @@ def transit_light_curve(
     ArrayLike
         Light curve array.
     """
-    return light_curve(transited_star(star, y, x, r), star.phase(time))
+
+    def impl(star, time):
+        return jnp.einsum(
+            "ij,ij->i", transit_design_matrix(star, x, y, z, r, time), star.y
+        )
+
+    return (
+        jnp.vectorize(impl, excluded=(0,), signature="()->(n)")(star, time).T / jnp.pi
+    )

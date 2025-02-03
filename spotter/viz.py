@@ -139,7 +139,7 @@ def show(y, inc=np.pi / 2, obl=0.0, u=None, phase=0.0, ax=None, **kwargs):
     graticule(inc, obl, phase, ax=ax)
 
 
-def video(y, inc=None, u=None, duration=4, fps=10, **kwargs):
+def video(y, inc=None, obl=0.0, u=None, duration=4, fps=10, **kwargs):
     import matplotlib.animation as animation
     import matplotlib.pyplot as plt
     from IPython import display
@@ -152,7 +152,9 @@ def video(y, inc=None, u=None, duration=4, fps=10, **kwargs):
     inc = inc or 0.0
 
     fig, ax = plt.subplots(figsize=(3, 3))
-    im = plt.imshow(core.render(y, inc, u, 0.0), extent=(-1, 1, -1, 1), **kwargs)
+    im = plt.imshow(
+        core.render(y, inc, u, 0.0, obl=obl), extent=(-1, 1, -1, 1), **kwargs
+    )
     plt.axis("off")
     plt.tight_layout()
     ax.set_frame_on(False)
@@ -162,10 +164,10 @@ def video(y, inc=None, u=None, duration=4, fps=10, **kwargs):
     def update(frame):
         a = im.get_array()
         phase = np.pi * 2 * frame / frames
-        a = core.render(y, inc, u, phase)
+        a = core.render(y, inc, u, phase, obl)
         for art in list(ax.lines):
             art.remove()
-        graticule(inc, ax=ax, theta=phase, white_contour=False)
+        graticule(inc, ax=ax, theta=phase, white_contour=False, obl=obl)
 
         im.set_array(a)
         return [im]
