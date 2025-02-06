@@ -7,15 +7,13 @@
 
 *spotter* uses the [HEALPix](https://healpix.sourceforge.io/) subdivision scheme and is powered by the high-performance numerical package [JAX](https://jax.readthedocs.io/en/latest/notebooks/quickstart.html), enabling its use on GPUs.
 
-
-
 ```{toctree}
 :maxdepth: 1
 :caption: Get started
 
 installation
 notebooks/introduction
-notebooks/principle.ipynb
+notebooks/precision.ipynb
 ```
 
 ```{toctree}
@@ -32,5 +30,7 @@ notebooks/multiband
 ```{toctree}
 :maxdepth: 1
 :caption: Reference
+
+notebooks/principle.ipynb
 
 ```
