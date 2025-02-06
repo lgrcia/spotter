@@ -87,7 +87,6 @@ def graticule(
     obl: float = 0.0,
     theta: float = 0.0,
     pts: int = 100,
-    white_contour=True,
     radius: float = 1.0,
     n=6,
     ax=None,
@@ -114,12 +113,6 @@ def graticule(
     plot_lines(lon, ax=ax, **kwargs)
     theta = np.linspace(0, 2 * np.pi, 2 * pts)
 
-    # contour
-    sqrt_radius = radius
-    ax.plot(sqrt_radius * np.cos(theta), sqrt_radius * np.sin(theta), **kwargs)
-    if white_contour:
-        ax.plot(sqrt_radius * np.cos(theta), sqrt_radius * np.sin(theta), c="w", lw=3)
-
 
 def show(y, inc=np.pi / 2, obl=0.0, u=None, phase=0.0, ax=None, **kwargs):
     import matplotlib.pyplot as plt
@@ -136,6 +129,8 @@ def show(y, inc=np.pi / 2, obl=0.0, u=None, phase=0.0, ax=None, **kwargs):
     ax.tick_params(bottom=False, labelbottom=False)
     ax.patch.set_visible(False)
     ax.imshow(img, extent=(-1, 1, -1, 1), **kwargs)
+    ax.set_xlim(-1.05, 1.05)
+    ax.set_ylim(-1.05, 1.05)
     graticule(inc, obl, phase, ax=ax)
 
 
@@ -167,7 +162,7 @@ def video(y, inc=None, obl=0.0, u=None, duration=4, fps=10, **kwargs):
         a = core.render(y, inc, u, phase, obl)
         for art in list(ax.lines):
             art.remove()
-        graticule(inc, ax=ax, theta=phase, white_contour=False, obl=obl)
+        graticule(inc, ax=ax, theta=phase, obl=obl)
 
         im.set_array(a)
         return [im]
