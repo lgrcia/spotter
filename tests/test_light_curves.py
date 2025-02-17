@@ -11,7 +11,7 @@ def test_dark_hemisphere():
     star = Star.from_sides(2**4, period=1.0)
     star = star.set(y=1.0 - core.spot(star.sides, 0.0, 0.0, np.pi / 2))
     time = np.array([0.0, 0.5])
-    result = light_curves.light_curve(star, time)
+    result = light_curves.light_curve(star, time, normalize=False)
     expected = np.array([0.0, 1.0])
     assert jnp.allclose(expected, result)
 

@@ -86,7 +86,7 @@ def design_matrix(N_or_y, phase=None, inc=None, u=None, obl=None):
     X = vec(N_or_y)
     mask, projected_area, limb_darkening = mask_projected_limb(X, phase, inc, u, obl)
     geometry = mask * projected_area
-    return jnp.pi * limb_darkening * geometry / (geometry * limb_darkening).sum()
+    return limb_darkening * geometry / (geometry * limb_darkening).sum()
 
 
 def flux(y, inc=None, u=None, phase=None, obl=None):
