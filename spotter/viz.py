@@ -114,7 +114,7 @@ def graticule(
     theta = np.linspace(0, 2 * np.pi, 2 * pts)
 
 
-def show(y, inc=np.pi / 2, obl=0.0, u=None, phase=0.0, ax=None, **kwargs):
+def show(y, inc=np.pi / 2, obl=0.0, u=None, xsize=800, phase=0.0, ax=None, **kwargs):
     import matplotlib.pyplot as plt
 
     kwargs.setdefault("cmap", _DEFAULT_CMAP)
@@ -123,7 +123,7 @@ def show(y, inc=np.pi / 2, obl=0.0, u=None, phase=0.0, ax=None, **kwargs):
     # kwargs.setdefault("vmax", 1.0)
     ax = ax or plt.gca()
 
-    img = core.render(y, inc, u, phase, obl)
+    img = core.render(y, inc, u, phase, obl, xsize=xsize)
     plt.setp(ax.spines.values(), visible=False)
     ax.tick_params(left=False, labelleft=False)
     ax.tick_params(bottom=False, labelbottom=False)
@@ -141,8 +141,8 @@ def video(y, inc=None, obl=0.0, u=None, duration=4, fps=10, **kwargs):
 
     kwargs.setdefault("cmap", _DEFAULT_CMAP)
     kwargs.setdefault("origin", "lower")
-    kwargs.setdefault("vmin", 0.0)
-    kwargs.setdefault("vmax", 1.0)
+    kwargs.setdefault("vmin", y.min())
+    kwargs.setdefault("vmax", y.max())
 
     inc = inc or 0.0
 

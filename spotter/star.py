@@ -208,7 +208,7 @@ class Star(eqx.Module):
         return core.vec(self.sides)
 
 
-def show(star: Star, phase: ArrayLike = 0.0, ax=None, **kwargs):
+def show(star: Star, phase: ArrayLike = 0.0, ax=None, xsize=800, **kwargs):
     """Show the star map. If `star.y` is 2D, the first map is shown.
 
     Parameters
@@ -227,6 +227,7 @@ def show(star: Star, phase: ArrayLike = 0.0, ax=None, **kwargs):
         star.u[0] if star.u is not None else None,
         phase,
         ax=ax,
+        xsize=xsize,
         **kwargs,
     )
 

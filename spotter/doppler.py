@@ -1,10 +1,11 @@
-import healpy as hp
-
-from spotter.core import integrated_spectrum
-from spotter.star import Star
-from jax.typing import ArrayLike
-import jax.numpy as jnp
 from functools import partial
+
+import healpy as hp
+import jax.numpy as jnp
+from jax.typing import ArrayLike
+
+from spotter import core, light_curves
+from spotter.star import Star
 
 
 @partial(jnp.vectorize, excluded=(0,), signature="()->(n)")
@@ -24,7 +25,7 @@ def spectrum(star: Star, time: float) -> ArrayLike:
         Integrated spectrum.
     """
     phi, theta = hp.pix2ang(star.sides, range(hp.nside2npix(star.sides)))
-    return integrated_spectrum(
+    return core.integrated_spectrum(
         star.sides,
         theta,
         phi,
@@ -35,3 +36,27 @@ def spectrum(star: Star, time: float) -> ArrayLike:
         star.phase(time),
         star.inc,
     )
+
+
+def rv_design_matrix(star: Star, time: float) -> ArrayLike:
+    phi, theta = hp.pix2ang(star.sides, range(hp.nside2npix(star.sides)))
+    rv = core.radial_velocity(
+        theta,
+        phi,
+        star.period,
+        star.radius,
+        star.phase(time),
+        star.inc,
+    )
+    return light_curves.design_matrix(star, time) * rv
+
+
+def radial_velocity(star: Star, time: float) -> ArrayLike:
+    def impl(star, time):
+        return jnp.einsum(
+            "ij,ij->i",
+            rv_design_matrix(star, time),
+            star.y,
+        ) / light_curves.light_curve(star, time, normalize=False)
+
+    return jnp.vectorize(impl, excluded=(0,), signature="()->(n)")(star, time).T

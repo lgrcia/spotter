@@ -86,7 +86,7 @@ def design_matrix(N_or_y, phase=None, inc=None, u=None, obl=None):
     X = vec(N_or_y)
     mask, projected_area, limb_darkening = mask_projected_limb(X, phase, inc, u, obl)
     geometry = mask * projected_area
-    return jnp.pi * limb_darkening * geometry / (geometry * limb_darkening).sum()
+    return limb_darkening * geometry / (geometry * limb_darkening).sum()
 
 
 def flux(y, inc=None, u=None, phase=None, obl=None):
@@ -116,7 +116,7 @@ def soft_spot(N, latitude, longitude, radius):
     return profile / jnp.max(profile)
 
 
-def render(y, inc=None, u=None, phase=0.0, obl=0.0):
+def render(y, inc=None, u=None, phase=0.0, obl=0.0, xsize=800):
     import matplotlib.pyplot as plt
 
     X = vec(y)
@@ -126,7 +126,9 @@ def render(y, inc=None, u=None, phase=0.0, obl=0.0):
         rot=[phase, np.pi / 2 - inc or 0.0, obl or 0.0], deg=False
     ).rotate_map_pixel(y * limb_darkening)
 
-    projected_map = hp.orthview(rotated, half_sky=True, return_projected_map=True)
+    projected_map = hp.orthview(
+        rotated, half_sky=True, return_projected_map=True, xsize=xsize
+    )
     plt.close()
 
     return projected_map
@@ -169,14 +171,21 @@ def transit_chord(N, x, r, inc=None):
     return jnp.abs(_x - x) < r
 
 
-def doppler_shift(theta, phi, period, radius, phase):
+def radial_velocity(theta, phi, period, radius, phase, inc=None):
     period_s = period * 24 * 60 * 60  # convert days to seconds
     omega = jnp.pi * 2 / period_s  # angular velocity
     radius_m = radius * 695700000.0  # convert solar radii to meters
-    c = 299792458.0
     sin_phi = np.sin(phi)  # numpy here! as phi is static
-    radial_velocity = radius_m * omega * jnp.sin(theta - phase) * sin_phi
-    shift = radial_velocity / c
+    rv = radius_m * omega * jnp.sin(theta - phase) * sin_phi
+    if inc is not None:
+        rv = rv * jnp.sin(inc)
+    return rv
+
+
+def doppler_shift(theta, phi, period, radius, phase, inc=None):
+    rv = radial_velocity(theta, phi, period, radius, phase, inc)
+    c = 299792458.0
+    shift = rv / c
     return shift
 
 
