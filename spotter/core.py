@@ -171,19 +171,19 @@ def transit_chord(N, x, r, inc=None):
     return jnp.abs(_x - x) < r
 
 
-def radial_velocity(N, theta, phi, period, radius, phase, inc, intensity):
+def radial_velocity(theta, phi, period, radius, phase, inc=None):
     period_s = period * 24 * 60 * 60  # convert days to seconds
     omega = jnp.pi * 2 / period_s  # angular velocity
     radius_m = radius * 695700000.0  # convert solar radii to meters
     sin_phi = np.sin(phi)  # numpy here! as phi is static
-    mask, projected, limb = mask_projected_limb(vec(N), phase, inc=inc)
-    limb_geometry = projected * mask * limb
     rv = radius_m * omega * jnp.sin(theta - phase) * sin_phi
-    return jnp.sum(rv * limb_geometry * intensity, 0)
+    if inc is not None:
+        rv = rv * jnp.sin(inc)
+    return rv
 
 
-def doppler_shift(theta, phi, period, radius, phase):
-    rv = radial_velocity(theta, phi, period, radius, phase)
+def doppler_shift(theta, phi, period, radius, phase, inc=None):
+    rv = radial_velocity(theta, phi, period, radius, phase, inc)
     c = 299792458.0
     shift = rv / c
     return shift
