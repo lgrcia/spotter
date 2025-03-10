@@ -81,6 +81,8 @@ def transit_design_matrix(star, x, y, z, r, time=None):
     v = jnp.stack((_x, _y, _z), axis=-1)
 
     phase = star.phase(time)
+    # # ensures non-zero phase
+    # phase = jnp.where(phase == 0.0, 1.0, phase)
     _rv = Rotation.from_rotvec([phase, 0.0, 0.0]).apply(v)
     rv = jnp.where(phase == 0.0, v, _rv)
 
@@ -97,7 +99,7 @@ def transit_design_matrix(star, x, y, z, r, time=None):
     _x, _y, _ = rv.T
 
     distance = jnp.linalg.norm(
-        jnp.array([_x, _y]) - jnp.array([x, -y])[:, None], axis=0
+        jnp.array([_x, _y]) - jnp.array([y, -x])[:, None], axis=0
     )
 
     transited_y = utils.sigmoid(distance - r, 1000.0)
@@ -137,11 +139,16 @@ def transit_light_curve(
         Light curve array.
     """
 
-    def impl(star, time):
+    def impl(star, time, x, y, z):
         return jnp.einsum(
             "ij,ij->i", transit_design_matrix(star, x, y, z, r, time), star.y
         )
 
     norm = 1 / jnp.mean(star.y) if normalize else 1.0
 
-    return jnp.vectorize(impl, excluded=(0,), signature="()->(n)")(star, time).T * norm
+    return (
+        jnp.vectorize(impl, excluded=(0,), signature="(),(),(),()->(n)")(
+            star, time, x, y, z
+        ).T
+        * norm
+    )
