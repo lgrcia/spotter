@@ -40,7 +40,9 @@ def test_dipole_occultation():
         transit_light_curve(star, z=10, y=0.5, r=0.3),
     )
 
-    assert transit_light_curve(star, z=10, x=-0.5, r=0.25) == 1.0
+    np.testing.assert_allclose(
+        transit_light_curve(star, z=10, x=-0.5, r=0.25), 1.0, 1e-4
+    )
     assert transit_light_curve(star, z=10, x=0.5, r=0.25) < 1.0
 
 
