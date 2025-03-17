@@ -24,6 +24,9 @@ notebooks/surface_gp
 notebooks/ensemble
 notebooks/spectral
 notebooks/multiband
+notebooks/spot_crossing
+notebooks/rv
+
 
 ```
 

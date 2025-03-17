@@ -11,7 +11,7 @@ from spotter import core
 
 @pytest.mark.parametrize("deg", (3, 7))
 @pytest.mark.parametrize("u", ([], [0.1, 0.4]))
-def test_starry(deg, u):
+def test_jaxoplanet(deg, u):
     pytest.importorskip("jaxoplanet")
     from jaxoplanet.starry import Surface, Ylm
     from jaxoplanet.starry.light_curves import surface_light_curve
@@ -46,7 +46,7 @@ def test_dipole_occultation():
     assert transit_light_curve(star, z=10, x=0.5, r=0.25) < 1.0
 
 
-def test_spot_occulation():
+def test_jaxoplanet_spot_occulation():
     pytest.importorskip("jaxoplanet")
     from jaxoplanet.starry import Surface, Ylm
     from jaxoplanet.starry.light_curves import surface_light_curve
