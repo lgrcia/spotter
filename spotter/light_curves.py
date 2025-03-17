@@ -46,7 +46,7 @@ def design_matrix(star: Star, time: ArrayLike) -> ArrayLike:
         )(star.y)
 
 
-def light_curve(star: Star, time: ArrayLike) -> ArrayLike:
+def light_curve(star: Star, time: ArrayLike, normalize=True) -> ArrayLike:
     """Light curve of a rotating Star.
 
     Parameters
@@ -55,6 +55,8 @@ def light_curve(star: Star, time: ArrayLike) -> ArrayLike:
         Star object.
     time : ArrayLike
         Time array in days.
+    normalize: bool, optional
+        Wether to normalize the light curve, by default True
 
     Returns
     -------
@@ -65,9 +67,9 @@ def light_curve(star: Star, time: ArrayLike) -> ArrayLike:
     def impl(star, time):
         return jnp.einsum("ij,ij->i", design_matrix(star, time), star.y)
 
-    return (
-        jnp.vectorize(impl, excluded=(0,), signature="()->(n)")(star, time).T / jnp.pi
-    )
+    norm = 1 / jnp.mean(star.y) if normalize else 1.0
+
+    return jnp.vectorize(impl, excluded=(0,), signature="()->(n)")(star, time).T * norm
 
 
 def transit_design_matrix(star, x, y, z, r, time=None):
@@ -79,6 +81,8 @@ def transit_design_matrix(star, x, y, z, r, time=None):
     v = jnp.stack((_x, _y, _z), axis=-1)
 
     phase = star.phase(time)
+    # # ensures non-zero phase
+    # phase = jnp.where(phase == 0.0, 1.0, phase)
     _rv = Rotation.from_rotvec([phase, 0.0, 0.0]).apply(v)
     rv = jnp.where(phase == 0.0, v, _rv)
 
@@ -95,7 +99,7 @@ def transit_design_matrix(star, x, y, z, r, time=None):
     _x, _y, _ = rv.T
 
     distance = jnp.linalg.norm(
-        jnp.array([_x, _y]) - jnp.array([x, -y])[:, None], axis=0
+        jnp.array([_x, _y]) - jnp.array([y, -x])[:, None], axis=0
     )
 
     transited_y = utils.sigmoid(distance - r, 1000.0)
@@ -110,6 +114,7 @@ def transit_light_curve(
     z: float = 0.0,
     r: float = 0.0,
     time: float = 0.0,
+    normalize=True,
 ):
     """Light curve of a transited Star. The x-axis cross the star in the horizontal direction (→),
     and the y-axis cross the star in the vertical up direction (↑).
@@ -125,6 +130,8 @@ def transit_light_curve(
         Radius of the disk, by default 0.0.
     time : float, optional
         Time array in days. by default 0.0.
+    normalize: bool, optional
+        Wether to normalize the light curve, by default True
 
     Returns
     -------
@@ -132,11 +139,16 @@ def transit_light_curve(
         Light curve array.
     """
 
-    def impl(star, time):
+    def impl(star, time, x, y, z):
         return jnp.einsum(
             "ij,ij->i", transit_design_matrix(star, x, y, z, r, time), star.y
         )
 
+    norm = 1 / jnp.mean(star.y) if normalize else 1.0
+
     return (
-        jnp.vectorize(impl, excluded=(0,), signature="()->(n)")(star, time).T / jnp.pi
+        jnp.vectorize(impl, excluded=(0,), signature="(),(),(),()->(n)")(
+            star, time, x, y, z
+        ).T
+        * norm
     )
