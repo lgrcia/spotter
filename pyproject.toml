@@ -10,7 +10,7 @@ dependencies = ["numpy", "healpy", "jax", "jaxlib", "equinox", "tinygp", "matplo
 
 [project.optional-dependencies]
 dev = ["black", "pytest", "nox", "ipykernel", "matplotlib"]
-test = ["pytest", "jaxoplanet", "pytest-xdist"]
+test = ["pytest", "jaxoplanet>=0.1.0", "pytest-xdist"]
 docs = [
     "matplotlib",
     "sphinx",

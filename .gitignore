@@ -62,5 +62,5 @@ docs/**/generated
 **/.ipynb_checkpoints
 build
 jupyter_execute
-_doc
+_docs
 docs/autoapi
