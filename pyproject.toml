@@ -1,6 +1,6 @@
 [project]
 name = "spotter"
-version = "0.0.5"
+version = "0.0.6"
 description = "Approximate forward models of fluxes and spectra time-series of non-uniform stars."
 authors = [{ name = "Lionel Garcia" }, { name = "Benjamin Rackham" }]
 license = "MIT"
@@ -10,8 +10,7 @@ dependencies = ["numpy", "healpy", "jax", "jaxlib", "equinox", "tinygp", "matplo
 
 [project.optional-dependencies]
 dev = ["black", "pytest", "nox", "ipykernel", "matplotlib"]
-test = ["pytest", "pytest-xdist"]
-comparison = ["jaxoplanet>=0.0.4"]
+test = ["pytest", "jaxoplanet", "pytest-xdist"]
 docs = [
     "matplotlib",
     "sphinx",
@@ -25,6 +24,11 @@ docs = [
     "ipywidgets",
     "sphinx-autoapi<3.2.0",
     "ipykernel",
+    "numpyro-ext",
+    "jaxoplanet",
+    "corner",
+    "arviz",
+    "jaxopt"
 ]
 
 [build-system]
