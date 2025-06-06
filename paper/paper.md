@@ -30,6 +30,8 @@ The study of exoplanets predominantly relies on measurements of host stars' obse
 
 *spotter* is a Python package designed for fast forward modeling of non-uniform stellar surfaces. Built with JAX [@jax:2018], it leverages hardware acceleration to enable efficient simulations and inferences through a Pythonic interface. *spotter* can model flux and spectral time-series from pixelated stellar surfaces and define surface Gaussian processes conditioned on parameters such as spot size and contrast, inspired by @luger:2021. Its minimal and flexible design makes it a versatile tool for stellar and exoplanet science applications, including ensemble analyses of stellar light curves, akin to approaches similar to @luger:2021 and @morris:2020.
 
+A key advantage of *spotter* is its native implementation in JAX, which provides seamless integration with probabilistic programming tools in the JAX ecosystem and enables hardware acceleration on GPUs and TPUs. Unlike @luger:2021, *spotter* supports modeling of surfaces at much higher spatial resolutions. In contrast to @morris:2020, *spotter* allows for the representation of arbitrarily shaped active regions, offering greater flexibility in simulating complex stellar surface features.
+
 # Principle
 
 If $\mathbf{y}$ represents a vector of pixel values corresponding to the surface intensity of a star, *spotter* models the observable $f$ (e.g., flux) as
