@@ -21,7 +21,7 @@ notebooks/precision.ipynb
 :caption: Tutorials
 
 notebooks/surface_gp
-notebooks/ensemble
+notebooks/flux_gp
 notebooks/spectral
 notebooks/multiband
 notebooks/spot_crossing

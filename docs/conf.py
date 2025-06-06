@@ -10,10 +10,13 @@ extensions = [
     "sphinx.ext.autosummary",
     "sphinx.ext.viewcode",
     "autoapi.extension",
+    "sphinx.ext.doctest",
+    "matplotlib.sphinxext.plot_directive",
 ]
 
 templates_path = ["_templates"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
+
 
 html_theme = "sphinx_book_theme"
 html_static_path = ["_static"]
@@ -58,3 +61,6 @@ autoapi_options = [
 autoapi_template_dir = "_autoapi_templates"
 
 suppress_warnings = ["autoapi.python_import_resolution"]
+
+nb_execution_excludepatterns = ["flux_gp.ipynb"]
+plot_include_source = True
