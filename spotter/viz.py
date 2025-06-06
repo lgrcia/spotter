@@ -1,3 +1,10 @@
+"""
+Visualization utilities for spherical maps and stellar surfaces.
+
+This module provides functions for plotting HEALPix maps, graticules, and
+generating videos of rotating stars.
+"""
+
 import numpy as np
 from scipy.spatial.transform import Rotation
 
@@ -7,6 +14,26 @@ _DEFAULT_CMAP = "magma"
 
 
 def lon_lat_lines(n: int = 6, pts: int = 100, radius: float = 1.0):
+    """
+    Generate latitude and longitude lines on a sphere.
+
+    Parameters
+    ----------
+    n : int or tuple, optional
+        Number of latitude lines (and longitude lines if tuple).
+    pts : int, optional
+        Number of points per line.
+    radius : float, optional
+        Sphere radius.
+
+    Returns
+    -------
+    lat : ndarray
+        Latitude lines.
+    lon : ndarray
+        Longitude lines.
+    """
+
     assert isinstance(n, int) or len(n) == 2
 
     if isinstance(n, int):
@@ -43,11 +70,29 @@ def lon_lat_lines(n: int = 6, pts: int = 100, radius: float = 1.0):
 
 
 def rotation(inc, obl, theta):
+    """
+    Compute the rotation for given inclination, obliquity, and phase.
+
+    Parameters
+    ----------
+    inc : float
+        Inclination in radians.
+    obl : float
+        Obliquity in radians.
+    theta : float
+        Rotation phase in radians.
+
+    Returns
+    -------
+    R : scipy.spatial.transform.Rotation
+        Rotation object.
+    """
+
     u = [np.cos(obl), np.sin(obl), 0]
     u /= np.linalg.norm(u)
     u *= inc
 
-    R = Rotation.from_rotvec(u)
+    R = Rotation.from_rotvec(np.array(u))
     R *= Rotation.from_rotvec([0, 0, obl])
     R *= Rotation.from_rotvec([np.pi / 2, 0, 0])
     R *= Rotation.from_rotvec([0, 0, -theta])
@@ -55,6 +100,26 @@ def rotation(inc, obl, theta):
 
 
 def rotate_lines(lines, inc, obl, theta):
+    """
+    Rotate lines by given inclination, obliquity, and phase.
+
+    Parameters
+    ----------
+    lines : ndarray
+        Input lines.
+    inc : float
+        Inclination in radians.
+    obl : float
+        Obliquity in radians.
+    theta : float
+        Rotation phase in radians.
+
+    Returns
+    -------
+    rotated_lines : ndarray
+        Rotated lines.
+    """
+
     R = rotation(inc, obl, theta)
 
     rotated_lines = np.array([R.apply(l.T) for l in lines]).T
@@ -64,6 +129,21 @@ def rotate_lines(lines, inc, obl, theta):
 
 
 def plot_lines(lines, axis=(0, 1), ax=None, **kwargs):
+    """
+    Plot lines on a matplotlib axis.
+
+    Parameters
+    ----------
+    lines : ndarray
+        Lines to plot.
+    axis : tuple, optional
+        Axes to plot (default (0, 1)).
+    ax : matplotlib axis, optional
+        Axis to plot on.
+    **kwargs
+        Additional plot arguments.
+    """
+
     import matplotlib.pyplot as plt
 
     if ax is None:
@@ -87,12 +167,34 @@ def graticule(
     obl: float = 0.0,
     theta: float = 0.0,
     pts: int = 100,
-    white_contour=True,
     radius: float = 1.0,
     n=6,
     ax=None,
     **kwargs,
 ):
+    """
+    Plot a graticule (latitude/longitude grid) on a sphere.
+
+    Parameters
+    ----------
+    inc : float
+        Inclination in radians.
+    obl : float, optional
+        Obliquity in radians.
+    theta : float, optional
+        Rotation phase in radians.
+    pts : int, optional
+        Number of points per line.
+    radius : float, optional
+        Sphere radius.
+    n : int or tuple, optional
+        Number of latitude/longitude lines.
+    ax : matplotlib axis, optional
+        Axis to plot on.
+    **kwargs
+        Additional plot arguments.
+    """
+
     import matplotlib.pyplot as plt
 
     _inc = np.pi / 2 - inc
@@ -114,14 +216,31 @@ def graticule(
     plot_lines(lon, ax=ax, **kwargs)
     theta = np.linspace(0, 2 * np.pi, 2 * pts)
 
-    # contour
-    sqrt_radius = radius
-    ax.plot(sqrt_radius * np.cos(theta), sqrt_radius * np.sin(theta), **kwargs)
-    if white_contour:
-        ax.plot(sqrt_radius * np.cos(theta), sqrt_radius * np.sin(theta), c="w", lw=3)
 
+def show(y, inc=np.pi / 2, obl=0.0, u=None, xsize=800, phase=0.0, ax=None, **kwargs):
+    """
+    Show a rendered map with graticule.
 
-def show(y, inc=np.pi / 2, u=None, phase=0.0, ax=None, **kwargs):
+    Parameters
+    ----------
+    y : array_like
+        HEALPix map.
+    inc : float, optional
+        Inclination in radians.
+    obl : float, optional
+        Obliquity in radians.
+    u : array_like or None, optional
+        Limb darkening coefficients.
+    xsize : int, optional
+        Output image size.
+    phase : float, optional
+        Rotation phase in radians.
+    ax : matplotlib axis, optional
+        Axis to plot on.
+    **kwargs
+        Additional plot arguments.
+    """
+
     import matplotlib.pyplot as plt
 
     kwargs.setdefault("cmap", _DEFAULT_CMAP)
@@ -130,29 +249,58 @@ def show(y, inc=np.pi / 2, u=None, phase=0.0, ax=None, **kwargs):
     # kwargs.setdefault("vmax", 1.0)
     ax = ax or plt.gca()
 
-    img = core.render(y, inc, u, phase)
+    img = core.render(y, inc, u, phase, obl, xsize=xsize)
     plt.setp(ax.spines.values(), visible=False)
     ax.tick_params(left=False, labelleft=False)
     ax.tick_params(bottom=False, labelbottom=False)
     ax.patch.set_visible(False)
     ax.imshow(img, extent=(-1, 1, -1, 1), **kwargs)
-    graticule(inc, 0.0, phase, ax=ax)
+    ax.set_xlim(-1.05, 1.05)
+    ax.set_ylim(-1.05, 1.05)
+    graticule(inc, obl, phase, ax=ax)
 
 
-def video(y, inc=None, u=None, duration=4, fps=10, **kwargs):
+def video(y, inc=None, obl=0.0, u=None, duration=4, fps=10, **kwargs):
+    """
+    Create an HTML video of a rotating map (for Jupyter notebooks).
+
+    Parameters
+    ----------
+    y : array_like
+        HEALPix map.
+    inc : float, optional
+        Inclination in radians.
+    obl : float, optional
+        Obliquity in radians.
+    u : array_like or None, optional
+        Limb darkening coefficients.
+    duration : int, optional
+        Duration of the video in seconds.
+    fps : int, optional
+        Frames per second.
+    **kwargs
+        Additional plot arguments.
+
+    Returns
+    -------
+    None
+    """
+
     import matplotlib.animation as animation
     import matplotlib.pyplot as plt
     from IPython import display
 
     kwargs.setdefault("cmap", _DEFAULT_CMAP)
     kwargs.setdefault("origin", "lower")
-    kwargs.setdefault("vmin", 0.0)
-    kwargs.setdefault("vmax", 1.0)
+    kwargs.setdefault("vmin", y.min())
+    kwargs.setdefault("vmax", y.max())
 
     inc = inc or 0.0
 
     fig, ax = plt.subplots(figsize=(3, 3))
-    im = plt.imshow(core.render(y, inc, u, 0.0), extent=(-1, 1, -1, 1), **kwargs)
+    im = plt.imshow(
+        core.render(y, inc, u, 0.0, obl=obl), extent=(-1, 1, -1, 1), **kwargs
+    )
     plt.axis("off")
     plt.tight_layout()
     ax.set_frame_on(False)
@@ -162,10 +310,10 @@ def video(y, inc=None, u=None, duration=4, fps=10, **kwargs):
     def update(frame):
         a = im.get_array()
         phase = np.pi * 2 * frame / frames
-        a = core.render(y, inc, u, phase)
+        a = core.render(y, inc, u, phase, obl)
         for art in list(ax.lines):
             art.remove()
-        graticule(inc, ax=ax, theta=phase, white_contour=False)
+        graticule(inc, ax=ax, theta=phase, obl=obl)
 
         im.set_array(a)
         return [im]

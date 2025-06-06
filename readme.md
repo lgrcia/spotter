@@ -1,7 +1,7 @@
 # spotter
 
 <p align="center">
-    <img src="docs/_static/spotter.png" width="270">
+    <img src="https://spotter.readthedocs.io/en/latest/_static/spotter.png" width="270">
 </p>
 
 <p align="center">
@@ -17,6 +17,8 @@ Approximate forward models of fluxes and spectra time-series of non-uniform star
 </p>
 
 *spotter* uses the [HEALPix](https://healpix.sourceforge.io/) subdivision scheme and is powered by the high-performance numerical package [JAX](https://jax.readthedocs.io/en/latest/notebooks/quickstart.html), enabling its use on GPUs.
+
+Documentation can be found at [spotter.readthedocs.io](https://spotter.readthedocs.io)
 
 ## Installation
 
