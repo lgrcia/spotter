@@ -1,3 +1,10 @@
+"""
+Star object and related utilities for HEALPix-based stellar surface modeling.
+
+Defines the Star class, which encapsulates a HEALPix map, limb darkening,
+orientation, and physical properties. Includes visualization and transit utilities.
+"""
+
 import equinox as eqx
 import healpy as hp
 import jax

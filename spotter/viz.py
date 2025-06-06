@@ -1,3 +1,10 @@
+"""
+Visualization utilities for spherical maps and stellar surfaces.
+
+This module provides functions for plotting HEALPix maps, graticules, and
+generating videos of rotating stars.
+"""
+
 import numpy as np
 from scipy.spatial.transform import Rotation
 

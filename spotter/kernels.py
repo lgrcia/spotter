@@ -1,3 +1,10 @@
+"""
+Gaussian process kernels and covariance utilities for stellar surfaces and fluxes.
+
+This module defines kernels for spatial correlations on the sphere, active latitude
+modulation, and flux time series, including marginalization over inclination.
+"""
+
 import equinox as eqx
 import jax
 import jax.numpy as jnp

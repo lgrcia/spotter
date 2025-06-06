@@ -1,3 +1,10 @@
+"""
+Light curve and design matrix utilities for rotating and transited stars described by HEALPix maps.
+
+This module provides functions to compute design matrices, light curves, and
+transit light curves for stars with arbitrary surface maps and limb darkening.
+"""
+
 from functools import partial
 
 import jax

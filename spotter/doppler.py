@@ -1,3 +1,10 @@
+"""
+Doppler and spectral calculations for rotating stars.
+
+This module provides functions to compute disk-integrated spectra, radial velocity
+maps, and related quantities for stars with non-uniform surfaces.
+"""
+
 from functools import partial
 
 import healpy as hp

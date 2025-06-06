@@ -1,3 +1,11 @@
+"""
+Core utilities for spherical maps, geometry, and flux calculations.
+
+This module provides functions for working with HEALPix maps, including
+coordinate transformations, limb darkening, spot generation, and flux
+integration for stellar surfaces.
+"""
+
 import healpy as hp
 import jax
 import jax.numpy as jnp

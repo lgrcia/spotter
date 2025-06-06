@@ -1,3 +1,10 @@
+"""
+Utility functions for spherical harmonics, HEALPix, and conversions.
+
+This module provides helper functions for working with spherical harmonics,
+converting between representations, and mapping to HEALPix.
+"""
+
 from collections import defaultdict
 
 import healpy as hp

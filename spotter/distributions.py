@@ -1,3 +1,11 @@
+"""
+Probability distributions and sampling utilities for stellar surface features.
+
+This module provides functions to generate latitude distributions (e.g., butterfly
+distributions for active regions) and to sample latitudes uniformly or according
+to custom PDFs for spot placement on stars.
+"""
+
 import jax
 import jax.numpy as jnp
 import numpy as np
