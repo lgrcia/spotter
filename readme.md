@@ -18,6 +18,8 @@ Approximate forward models of fluxes and spectra time-series of non-uniform star
 
 *spotter* uses the [HEALPix](https://healpix.sourceforge.io/) subdivision scheme and is powered by the high-performance numerical package [JAX](https://jax.readthedocs.io/en/latest/notebooks/quickstart.html), enabling its use on GPUs.
 
+Documentation can be found at [spotter.readthedocs.io](https://spotter.readthedocs.io)
+
 ## Installation
 
 For now only locally with
