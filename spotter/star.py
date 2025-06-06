@@ -9,7 +9,8 @@ from spotter import core, utils, viz
 
 
 class Star(eqx.Module):
-    """A Star object whose surface is describe by HEALPix map(s).
+    """
+    A Star object whose surface is described by HEALPix map(s).
 
     The HEALPix maps can be a 2D array with a shape of (wavelengths, pixels), or a
     1D array with a shape of (pixels).
@@ -17,27 +18,60 @@ class Star(eqx.Module):
     When providing polynomial limb darkening coefficients, different options are possible:
 
     * u is 1D and y is 1D: Single set of limb darkening coefficients and a single map.
-    * u is 1D and y is 2D: The same limb darkening coefficients are applied to all wavelengths maps.
+    * u is 1D and y is 2D: The same limb darkening coefficients are applied to all wavelength maps.
     * u is 2D and y is 1D: The limb darkening coefficients are different for each wavelength but the map is the same.
     * ``u.shape[0]`` == ``y.shape[0]``: u and y are 2D arrays specifying the limb darkening coeffs and maps for each wavelength.
 
     Parameters
     ----------
-    y : ArrayLike | None, optional
+    y : ArrayLike or None, optional
         HEALPix map of the star, with shape (pixels,) or (wavelengths, pixels). Must be provided.
-    u : ArrayLike | None, optional
+    u : ArrayLike or None, optional
         Polynomial limb darkening coefficients with shape (order,) or (wavelengths, order). By default None.
-        If provided, must either be coefficients applied to all wavelengths, or have the same length as y (
-        i.e. defined for the same number of wavelengths).
-    inc : float | None, optional
+        If provided, must either be coefficients applied to all wavelengths, or have the same length as y
+        (i.e. defined for the same number of wavelengths).
+    inc : float or None, optional
         Inclination of the star, in radians. 0 is pole-on, pi/2 is equator-on. By default None.
-    period : float | None, optional
-        Period of the star, in days. By default None
-    radius : float | None, optional
-        Radius of the star, in solar radii. By default None
-    wv : float | None, optional
-        Wavelength of the star maps, in meters. By default None. If  provided, must be compatible with either
+    obl : float or None, optional
+        Obliquity of the star, in radians. 0 is no obliquity, pi/2 is maximum obliquity. By default None.
+    period : float or None, optional
+        Period of the star, in days. By default None.
+    radius : float or None, optional
+        Radius of the star, in solar radii. By default None.
+    wv : float or None, optional
+        Wavelength of the star maps, in meters. By default None. If provided, must be compatible with either
         the shape of u and/or y.
+
+    Attributes
+    ----------
+    y : ArrayLike
+        HEALPix map of the star, with shape (wavelengths, pixels).
+    u : ArrayLike or None
+        Polynomial limb darkening coefficients with shape (wavelengths, order).
+    period : float or None
+        Period of the star, in days.
+    inc : float or None
+        Inclination of the star, in radians. 0 is pole-on, pi/2 is equator-on.
+    obl : float or None
+        Obliquity of the star, in radians. 0 is no obliquity, pi/2 is maximum obliquity.
+    radius : float or None
+        Radius of the star, in solar radii.
+    wv : float or None
+        Wavelength of the star maps, in meters.
+    sides : int
+        Number of HEALPix sides.
+
+    Examples
+    --------
+
+    .. plot::
+
+        import numpy as np
+        from spotter.star import Star, show
+
+        star = Star.from_sides(30, inc=0.5, u=(0.4, 0.3), obl=0.5)
+        show(star)
+
     """
 
     y: ArrayLike
@@ -104,16 +138,32 @@ class Star(eqx.Module):
         return hp.nside2resol(self.sides)
 
     def __getitem__(self, key):
+        """
+        Return a new Star with selected wavelength(s).
+
+        Parameters
+        ----------
+        key : int, slice, or array_like
+            Index or indices to select.
+
+        Returns
+        -------
+        Star
+            New Star object with selected map(s).
+        """
         return self.set(y=self.y[key])
 
     @classmethod
     def from_sides(cls, sides: int, **kwargs):
-        """Create a Star object with a given number of sides.
+        """
+        Create a Star object with a given number of sides.
 
         Parameters
         ----------
         sides : int
             Number of sides of the HEALPix map.
+        **kwargs
+            Additional keyword arguments for Star.
 
         Returns
         -------
@@ -124,6 +174,19 @@ class Star(eqx.Module):
         return cls(y, **kwargs)
 
     def phase(self, time: ArrayLike | None) -> ArrayLike:
+        """
+        Compute the rotation phase for a given time.
+
+        Parameters
+        ----------
+        time : array_like or None
+            Time(s) in days.
+
+        Returns
+        -------
+        phase : float or array_like
+            Rotation phase(s) in radians.
+        """
         if time is None:
             return 0.0
         return (
@@ -133,6 +196,19 @@ class Star(eqx.Module):
         )
 
     def __mul__(self, other):
+        """
+        Multiply the star map by another Star or scalar.
+
+        Parameters
+        ----------
+        other : Star or scalar
+            Object to multiply with.
+
+        Returns
+        -------
+        Star
+            Resulting Star object.
+        """
         if isinstance(other, Star):
             y = self.y * other.y
         else:
@@ -140,9 +216,35 @@ class Star(eqx.Module):
         return self.set(y=y)
 
     def __rmul__(self, other):
+        """
+        Multiply the star map by another Star or scalar (right-mult).
+
+        Parameters
+        ----------
+        other : Star or scalar
+            Object to multiply with.
+
+        Returns
+        -------
+        Star
+            Resulting Star object.
+        """
         return self.__mul__(other)
 
     def __add__(self, other):
+        """
+        Add another Star or scalar to the star map.
+
+        Parameters
+        ----------
+        other : Star or scalar
+            Object to add.
+
+        Returns
+        -------
+        Star
+            Resulting Star object.
+        """
         if isinstance(other, Star):
             y = self.y + other.y
         else:
@@ -150,9 +252,35 @@ class Star(eqx.Module):
         return self.set(y=y)
 
     def __radd__(self, other):
+        """
+        Add another Star or scalar to the star map (right-add).
+
+        Parameters
+        ----------
+        other : Star or scalar
+            Object to add.
+
+        Returns
+        -------
+        Star
+            Resulting Star object.
+        """
         return self.__add__(other)
 
     def __sub__(self, other):
+        """
+        Subtract another Star or scalar from the star map.
+
+        Parameters
+        ----------
+        other : Star or scalar
+            Object to subtract.
+
+        Returns
+        -------
+        Star
+            Resulting Star object.
+        """
         if isinstance(other, Star):
             y = self.y - other.y
         else:
@@ -160,15 +288,34 @@ class Star(eqx.Module):
         return self.set(y=y)
 
     def __rsub__(self, other):
-        return self.__sub__(other)
+        """
+        Subtract the star map from another Star or scalar (right-sub).
 
-    def set(self, **kwargs):
-        """Return a map with set attributes.
+        Parameters
+        ----------
+        other : Star or scalar
+            Object to subtract from.
 
         Returns
         -------
         Star
-            Star object with set attributes.
+            Resulting Star object.
+        """
+        return self.__sub__(other)
+
+    def set(self, **kwargs):
+        """
+        Return a Star object with updated attributes.
+
+        Parameters
+        ----------
+        **kwargs
+            Attributes to update.
+
+        Returns
+        -------
+        Star
+            Star object with updated attributes.
         """
         current = {
             "y": self.y,
@@ -183,7 +330,8 @@ class Star(eqx.Module):
         return Star(**current)
 
     def spot(self, lat: float, lon: float, radius: float, sharpness: float = 20):
-        """Return a healpix map with a spot.
+        """
+        Return a HEALPix map with a spot.
 
         Parameters
         ----------
@@ -194,31 +342,44 @@ class Star(eqx.Module):
         radius : float
             Radius of the spot, in radians.
         sharpness : float, optional
-            Sharpness of the spot, by default 20
+            Sharpness of the spot edge (default 20).
+
         Returns
         -------
         ArrayLike
-            healpix map with a spot.
+            HEALPix map with a spot.
         """
         return core.spot(self.sides, lat, lon, radius, sharpness=sharpness)
 
     @property
     def coords(self):
-        """Return the coordinates of the star pixels."""
+        """
+        Return the coordinates of the star pixels.
+
+        Returns
+        -------
+        coords : ndarray
+            Cartesian coordinates of pixels.
+        """
         return core.vec(self.sides)
 
 
 def show(star: Star, phase: ArrayLike = 0.0, ax=None, xsize=800, **kwargs):
-    """Show the star map. If `star.y` is 2D, the first map is shown.
+    """
+    Show the star map. If `star.y` is 2D, the first map is shown.
 
     Parameters
     ----------
     star : Star
         Star object to show.
     phase : ArrayLike, optional
-        Phase of the star map to show, by default 0.0
+        Phase of the star map to show (default 0.0).
     ax : matplotlib axis, optional
-        Axis to plot the star map, by default None
+        Axis to plot the star map (default None).
+    xsize : int, optional
+        Output image size (default 800).
+    **kwargs
+        Additional keyword arguments for viz.show.
     """
     viz.show(
         star.y[0],
@@ -233,16 +394,19 @@ def show(star: Star, phase: ArrayLike = 0.0, ax=None, xsize=800, **kwargs):
 
 
 def video(star: Star, duration: int = 4, fps: int = 10, **kwargs):
-    """Create a html video of the star map. Only suitable and displayed in jupyter notebooks.
+    """
+    Create an HTML video of the star map (for Jupyter notebooks).
 
     Parameters
     ----------
     star : Star
         Star object to show.
     duration : int, optional
-        Duration of the video in seconds, by default
+        Duration of the video in seconds (default 4).
     fps : int, optional
-        Frames per second of the video, by default 10
+        Frames per second (default 10).
+    **kwargs
+        Additional keyword arguments for viz.video.
     """
     viz.video(
         star.y[0],
@@ -263,18 +427,23 @@ def transited_star(
     r: float = 0.0,
     time: float = None,
 ):
-    """Return a star transited by a circular opaque disk
+    """
+    Return a star transited by a circular opaque disk.
 
     Parameters
     ----------
     star : Star
         Star object to be transited.
     x : float, optional
-        x coordinate of the center of the disk, by default 0.0.
+        x coordinate of the disk center (default 0.0).
     y : float, optional
-        y coordinate of the center of the disk, by default 0.0.
+        y coordinate of the disk center (default 0.0).
+    z : float, optional
+        z coordinate of the disk center (default 0.0).
     r : float, optional
-        Radius of the disk, by default 0.0.
+        Radius of the disk (default 0.0).
+    time : float, optional
+        Time in days (default None).
 
     Returns
     -------
