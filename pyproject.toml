@@ -11,7 +11,6 @@ dependencies = ["numpy", "healpy", "jax", "jaxlib", "equinox", "tinygp", "matplo
 [project.optional-dependencies]
 dev = ["black", "pytest", "nox", "ipykernel", "matplotlib"]
 test = ["pytest", "jaxoplanet", "pytest-xdist"]
-comparison = ["jaxoplanet>=0.0.4"]
 docs = [
     "matplotlib",
     "sphinx",
