@@ -1,6 +1,6 @@
 [project]
 name = "spotter"
-version = "0.0.5"
+version = "0.0.6"
 description = "Approximate forward models of fluxes and spectra time-series of non-uniform stars."
 authors = [{ name = "Lionel Garcia" }, { name = "Benjamin Rackham" }]
 license = "MIT"
