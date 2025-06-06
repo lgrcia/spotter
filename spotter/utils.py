@@ -7,11 +7,40 @@ import numpy as np
 
 
 def sigmoid(x, scale=1000):
+    """
+    Numerically stable sigmoid function.
+
+    Parameters
+    ----------
+    x : float or array_like
+        Input value(s).
+    scale : float, optional
+        Scaling factor (default 1000).
+
+    Returns
+    -------
+    y : float or array_like
+        Output value(s) in [0, 1].
+    """
     return (jnp.tanh(x * scale / 2) + 1) / 2
 
 
 def y1d_to_2d(ydeg: int, flm_1d: np.ndarray) -> np.ndarray:
-    """1D starry Ylm to 2D s2fft"""
+    """
+    Convert 1D starry Ylm to 2D s2fft format.
+
+    Parameters
+    ----------
+    ydeg : int
+        Maximum degree.
+    flm_1d : ndarray
+        1D array of coefficients.
+
+    Returns
+    -------
+    flm_2d : ndarray
+        2D array of coefficients.
+    """
     new_flm = jnp.zeros((ydeg + 1, 2 * ydeg + 1), dtype=flm_1d.dtype)
     i = 0
     for l in range(ydeg + 1):
@@ -23,7 +52,21 @@ def y1d_to_2d(ydeg: int, flm_1d: np.ndarray) -> np.ndarray:
 
 
 def y2d_to_1d(ydeg: int, flm_2d: np.ndarray) -> np.ndarray:
-    """2D starry Ylm to 1D s2fft"""
+    """
+    Convert 2D s2fft Ylm to 1D starry format.
+
+    Parameters
+    ----------
+    ydeg : int
+        Maximum degree.
+    flm_2d : ndarray
+        2D array of coefficients.
+
+    Returns
+    -------
+    flm_1d : ndarray
+        1D array of coefficients.
+    """
     new_flm = jnp.zeros((ydeg + 1) ** 2, dtype=flm_2d.dtype)
     i = 0
     for l in range(ydeg + 1):
@@ -35,7 +78,19 @@ def y2d_to_1d(ydeg: int, flm_2d: np.ndarray) -> np.ndarray:
 
 
 def C(l):
-    """Complex to real conversion matrix"""
+    """
+    Complex to real spherical harmonics conversion matrix.
+
+    Parameters
+    ----------
+    l : int
+        Degree.
+
+    Returns
+    -------
+    C : ndarray
+        Conversion matrix.
+    """
     # See https://doi.org/10.1016/s0166-1280(97)00185-1 (Blanco 1997, Eq. 19)
     A = np.eye(l, l)[:, ::-1]
     B = np.zeros(l)[:, None]
@@ -50,7 +105,21 @@ def C(l):
 
 
 def ylm_to_hp(y, N):
-    """Converts a ylm array (starry like) to hp coefficients"""
+    """
+    Convert a ylm array (starry-like) to healpy coefficients and map.
+
+    Parameters
+    ----------
+    y : ndarray
+        Spherical harmonic coefficients.
+    N : int
+        HEALPix nside.
+
+    Returns
+    -------
+    mh : ndarray
+        HEALPix map.
+    """
     from jaxoplanet.starry.core import rotation
 
     deg = int(np.floor(np.sqrt(len(y)))) - 1

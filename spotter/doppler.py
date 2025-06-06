@@ -10,7 +10,8 @@ from spotter.star import Star
 
 @partial(jnp.vectorize, excluded=(0,), signature="()->(n)")
 def spectrum(star: Star, time: float) -> ArrayLike:
-    """Integrated spectrum of a rotating Star.
+    """
+    Compute the integrated spectrum of a rotating Star.
 
     Parameters
     ----------
@@ -21,7 +22,7 @@ def spectrum(star: Star, time: float) -> ArrayLike:
 
     Returns
     -------
-    ArrayLike
+    spectrum : ndarray
         Integrated spectrum.
     """
     phi, theta = hp.pix2ang(star.sides, range(hp.nside2npix(star.sides)))
@@ -39,6 +40,21 @@ def spectrum(star: Star, time: float) -> ArrayLike:
 
 
 def rv_design_matrix(star: Star, time: float) -> ArrayLike:
+    """
+    Compute the radial velocity design matrix for a Star.
+
+    Parameters
+    ----------
+    star : Star
+        Star object.
+    time : float
+        Time in days.
+
+    Returns
+    -------
+    matrix : ndarray
+        Radial velocity design matrix.
+    """
     phi, theta = hp.pix2ang(star.sides, range(hp.nside2npix(star.sides)))
     rv = core.radial_velocity(
         theta,
@@ -52,6 +68,22 @@ def rv_design_matrix(star: Star, time: float) -> ArrayLike:
 
 
 def radial_velocity(star: Star, time: float) -> ArrayLike:
+    """
+    Compute the disk-integrated radial velocity of a Star.
+
+    Parameters
+    ----------
+    star : Star
+        Star object.
+    time : float
+        Time in days.
+
+    Returns
+    -------
+    rv : ndarray
+        Disk-integrated radial velocity.
+    """
+
     def impl(star, time):
         return jnp.einsum(
             "ij,ij->i",

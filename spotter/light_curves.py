@@ -10,7 +10,8 @@ from spotter.star import Star, transited_star
 
 @partial(jnp.vectorize, excluded=(0,), signature="()->(m,n)")
 def design_matrix(star: Star, time: ArrayLike) -> ArrayLike:
-    """Design matrix for rotating Star.
+    """
+    Compute the design matrix for a rotating Star.
 
     Parameters
     ----------
@@ -21,7 +22,7 @@ def design_matrix(star: Star, time: ArrayLike) -> ArrayLike:
 
     Returns
     -------
-    ArrayLike
+    matrix : ndarray
         Design matrix.
     """
     if star.u is not None:
@@ -47,7 +48,8 @@ def design_matrix(star: Star, time: ArrayLike) -> ArrayLike:
 
 
 def light_curve(star: Star, time: ArrayLike, normalize=True) -> ArrayLike:
-    """Light curve of a rotating Star.
+    """
+    Compute the light curve of a rotating Star.
 
     Parameters
     ----------
@@ -55,12 +57,12 @@ def light_curve(star: Star, time: ArrayLike, normalize=True) -> ArrayLike:
         Star object.
     time : ArrayLike
         Time array in days.
-    normalize: bool, optional
-        Wether to normalize the light curve, by default True
+    normalize : bool, optional
+        Whether to normalize the light curve (default True).
 
     Returns
     -------
-    ArrayLike
+    lc : ndarray
         Light curve array.
     """
 
@@ -73,6 +75,29 @@ def light_curve(star: Star, time: ArrayLike, normalize=True) -> ArrayLike:
 
 
 def transit_design_matrix(star, x, y, z, r, time=None):
+    """
+    Compute the design matrix for a transited Star.
+
+    Parameters
+    ----------
+    star : Star
+        Star object.
+    x : float
+        x coordinate of the disk center.
+    y : float
+        y coordinate of the disk center.
+    z : float
+        z coordinate of the disk center.
+    r : float
+        Radius of the disk.
+    time : float or None, optional
+        Time in days.
+
+    Returns
+    -------
+    matrix : ndarray
+        Transit design matrix.
+    """
     X = design_matrix(star, time)
 
     from jax.scipy.spatial.transform import Rotation
@@ -116,27 +141,30 @@ def transit_light_curve(
     time: float = 0.0,
     normalize=True,
 ):
-    """Light curve of a transited Star. The x-axis cross the star in the horizontal direction (→),
-    and the y-axis cross the star in the vertical up direction (↑).
+    """
+    Compute the light curve of a transited Star.
+
     Parameters
     ----------
     star : Star
         Star object.
     x : float, optional
-        x coordinate of the center of the disk, by default 0.0.
+        x coordinate of the disk center (default 0.0).
     y : float, optional
-        y coordinate of the center of the disk, by default 0.0.
+        y coordinate of the disk center (default 0.0).
+    z : float, optional
+        z coordinate of the disk center (default 0.0).
     r : float, optional
-        Radius of the disk, by default 0.0.
+        Radius of the disk (default 0.0).
     time : float, optional
-        Time array in days. by default 0.0.
-    normalize: bool, optional
-        Wether to normalize the light curve, by default True
+        Time in days (default 0.0).
+    normalize : bool, optional
+        Whether to normalize the light curve (default True).
 
     Returns
     -------
-    ArrayLike
-        Light curve array.
+    lc : ndarray
+        Transit light curve array.
     """
 
     def impl(star, time, x, y, z):

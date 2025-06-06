@@ -7,16 +7,61 @@ from spotter import utils
 
 
 def distance(X, x):
+    """
+    Compute the great-circle distance between vectors X and x.
+
+    Parameters
+    ----------
+    X : array_like, shape (..., 3)
+        Array of 3D vectors.
+    x : array_like, shape (3,)
+        Single 3D vector.
+
+    Returns
+    -------
+    d : array_like
+        Great-circle distance(s) in radians.
+    """
     return jnp.arctan2(
         jnp.linalg.norm(jnp.cross(X.T, x[:, None], axis=0), axis=0), X @ x
     )
 
 
 def npix(N):
+    """
+    Return the number of HEALPix pixels for a given nside.
+
+    Parameters
+    ----------
+    N : int
+        HEALPix nside parameter.
+
+    Returns
+    -------
+    n : int
+        Number of pixels.
+    """
     return hp.nside2npix(N)
 
 
 def equator_coords(phi=None, inc=None, obl=None):
+    """
+    Compute the coordinates of the stellar equator for given orientation.
+
+    Parameters
+    ----------
+    phi : float or None, optional
+        Rotation phase in radians.
+    inc : float or None, optional
+        Inclination in radians.
+    obl : float or None, optional
+        Obliquity in radians.
+
+    Returns
+    -------
+    coords : ndarray, shape (3,)
+        Cartesian coordinates.
+    """
     # inc = None -> inc = pi/2
     if inc is None:
         si = 1.0
@@ -53,6 +98,31 @@ def equator_coords(phi=None, inc=None, obl=None):
 
 
 def mask_projected_limb(X, phase=None, inc=None, u=None, obl=None):
+    """
+    Compute mask, projected area, and limb darkening for visible pixels.
+
+    Parameters
+    ----------
+    X : array_like, shape (..., 3)
+        Cartesian coordinates of pixels.
+    phase : float, optional
+        Rotation phase in radians.
+    inc : float, optional
+        Inclination in radians.
+    u : array_like or None, optional
+        Limb darkening coefficients.
+    obl : float, optional
+        Obliquity in radians.
+
+    Returns
+    -------
+    mask : ndarray
+        Boolean mask for visible pixels.
+    projected_area : ndarray
+        Projected area for each pixel.
+    limb_darkening : ndarray
+        Limb darkening factor for each pixel.
+    """
     d = distance(X, equator_coords(phase, inc, obl))
     mask = d < jnp.pi / 2
     z = jnp.cos(d)
@@ -68,6 +138,21 @@ def mask_projected_limb(X, phase=None, inc=None, u=None, obl=None):
 
 
 def _N_or_Y_to_N_n(N_or_y):
+    """
+    Convert nside or map to (nside, npix).
+
+    Parameters
+    ----------
+    N_or_y : int or array_like
+        HEALPix nside or map.
+
+    Returns
+    -------
+    N : int
+        nside.
+    n : int
+        Number of pixels.
+    """
     if isinstance(N_or_y, int):
         n = hp.nside2npix(N_or_y)
         N = N_or_y
@@ -78,11 +163,45 @@ def _N_or_Y_to_N_n(N_or_y):
 
 
 def vec(N_or_y):
+    """
+    Return xyz coordinates for all pixels of a HEALPix map.
+
+    Parameters
+    ----------
+    N_or_y : int or array_like
+        HEALPix nside or map.
+
+    Returns
+    -------
+    xyz : ndarray, shape (npix, 3)
+        Cartesian coordinates of pixels.
+    """
     N, n = _N_or_Y_to_N_n(N_or_y)
     return np.array(hp.pix2vec(N, range(n))).T
 
 
 def design_matrix(N_or_y, phase=None, inc=None, u=None, obl=None):
+    """
+    Compute the flux design matrix for a HEALPix map.
+
+    Parameters
+    ----------
+    N_or_y : int or array_like
+        HEALPix nside or map.
+    phase : float, optional
+        Rotation phase in radians.
+    inc : float, optional
+        Inclination in radians.
+    u : array_like or None, optional
+        Limb darkening coefficients.
+    obl : float, optional
+        Obliquity in radians.
+
+    Returns
+    -------
+    matrix : ndarray
+        Design matrix.
+    """
     X = vec(N_or_y)
     mask, projected_area, limb_darkening = mask_projected_limb(X, phase, inc, u, obl)
     geometry = mask * projected_area
@@ -90,10 +209,46 @@ def design_matrix(N_or_y, phase=None, inc=None, u=None, obl=None):
 
 
 def flux(y, inc=None, u=None, phase=None, obl=None):
+    """
+    Compute the flux for a given map and orientation.
+
+    Parameters
+    ----------
+    y : array_like
+        HEALPix map.
+    inc : float, optional
+        Inclination in radians.
+    u : array_like or None, optional
+        Limb darkening coefficients.
+    phase : float, optional
+        Rotation phase in radians.
+    obl : float, optional
+        Obliquity in radians.
+
+    Returns
+    -------
+    flux : float
+        Integrated flux.
+    """
     return design_matrix(y, inc=inc, u=u, phase=phase, obl=obl) @ y
 
 
 def spherical_to_cartesian(theta, phi):
+    """
+    Convert spherical coordinates to cartesian.
+
+    Parameters
+    ----------
+    theta : float or array_like
+        Colatitude in radians.
+    phi : float or array_like
+        Longitude in radians.
+
+    Returns
+    -------
+    xyz : ndarray, shape (3,) or (..., 3)
+        Cartesian coordinates.
+    """
     x = jnp.sin(theta) * jnp.cos(phi)
     y = jnp.sin(theta) * jnp.sin(phi)
     z = jnp.cos(theta)
@@ -102,12 +257,52 @@ def spherical_to_cartesian(theta, phi):
 
 
 def spot(N, latitude, longitude, radius, sharpness=1000):
+    """
+    Generate a HEALPix map with a circular spot.
+
+    Parameters
+    ----------
+    N : int
+        HEALPix nside.
+    latitude : float
+        Latitude of the spot center in radians.
+    longitude : float
+        Longitude of the spot center in radians.
+    radius : float
+        Spot radius in radians.
+    sharpness : float, optional
+        Sharpness of the spot edge.
+
+    Returns
+    -------
+    spot_map : ndarray
+        HEALPix map with spot.
+    """
     X = vec(N)
     d = distance(X, spherical_to_cartesian(jnp.pi / 2 - latitude, -longitude))
     return 1 - utils.sigmoid(d - radius, sharpness)
 
 
 def soft_spot(N, latitude, longitude, radius):
+    """
+    Generate a HEALPix map with a soft-edged spot.
+
+    Parameters
+    ----------
+    N : int
+        HEALPix nside.
+    latitude : float
+        Latitude of the spot center in radians.
+    longitude : float
+        Longitude of the spot center in radians.
+    radius : float
+        Spot radius in radians.
+
+    Returns
+    -------
+    spot_map : ndarray
+        HEALPix map with soft-edged spot.
+    """
     X = vec(N)
     d = distance(X, spherical_to_cartesian(jnp.pi / 2 - latitude, longitude))
     A = d / (2 * radius)
@@ -117,6 +312,29 @@ def soft_spot(N, latitude, longitude, radius):
 
 
 def render(y, inc=None, u=None, phase=0.0, obl=0.0, xsize=800):
+    """
+    Render a HEALPix map as an orthographic projection.
+
+    Parameters
+    ----------
+    y : array_like
+        HEALPix map.
+    inc : float, optional
+        Inclination in radians.
+    u : array_like or None, optional
+        Limb darkening coefficients.
+    phase : float, optional
+        Rotation phase in radians.
+    obl : float, optional
+        Obliquity in radians.
+    xsize : int, optional
+        Output image size.
+
+    Returns
+    -------
+    img : ndarray
+        Rendered image.
+    """
     import matplotlib.pyplot as plt
 
     X = vec(y)
@@ -135,6 +353,25 @@ def render(y, inc=None, u=None, phase=0.0, obl=0.0, xsize=800):
 
 
 def amplitude(N_or_y, inc=None, u=None, undersampling: int = 3) -> callable:
+    """
+    Return a function to compute the amplitude of flux variations.
+
+    Parameters
+    ----------
+    N_or_y : int or array_like
+        HEALPix nside or map.
+    inc : float, optional
+        Inclination in radians.
+    u : array_like or None, optional
+        Limb darkening coefficients.
+    undersampling : int, optional
+        Undersampling factor for phase grid.
+
+    Returns
+    -------
+    fun : callable
+        Function that computes amplitude for a given map.
+    """
     N, _ = _N_or_Y_to_N_n(N_or_y)
     resolution = hp.nside2resol(N)
     X = vec(N)
@@ -160,6 +397,25 @@ def amplitude(N_or_y, inc=None, u=None, undersampling: int = 3) -> callable:
 
 
 def transit_chord(N, x, r, inc=None):
+    """
+    Compute mask for a transit chord across the stellar disk.
+
+    Parameters
+    ----------
+    N : int
+        HEALPix nside.
+    x : float
+        Chord center position.
+    r : float
+        Chord radius.
+    inc : float, optional
+        Inclination in radians.
+
+    Returns
+    -------
+    mask : ndarray
+        Boolean mask for pixels inside the chord.
+    """
     if inc is None:
         c = 0.0
         s = 1.0
@@ -172,6 +428,29 @@ def transit_chord(N, x, r, inc=None):
 
 
 def radial_velocity(theta, phi, period, radius, phase, inc=None):
+    """
+    Compute the radial velocity at each pixel.
+
+    Parameters
+    ----------
+    theta : array_like
+        Colatitude in radians.
+    phi : array_like
+        Longitude in radians.
+    period : float
+        Rotation period in days.
+    radius : float
+        Stellar radius in solar radii.
+    phase : float
+        Rotation phase in radians.
+    inc : float, optional
+        Inclination in radians.
+
+    Returns
+    -------
+    rv : ndarray
+        Radial velocity at each pixel (m/s).
+    """
     period_s = period * 24 * 60 * 60  # convert days to seconds
     omega = jnp.pi * 2 / period_s  # angular velocity
     radius_m = radius * 695700000.0  # convert solar radii to meters
@@ -183,6 +462,29 @@ def radial_velocity(theta, phi, period, radius, phase, inc=None):
 
 
 def doppler_shift(theta, phi, period, radius, phase, inc=None):
+    """
+    Compute the Doppler shift at each pixel.
+
+    Parameters
+    ----------
+    theta : array_like
+        Colatitude in radians.
+    phi : array_like
+        Longitude in radians.
+    period : float
+        Rotation period in days.
+    radius : float
+        Stellar radius in solar radii.
+    phase : float
+        Rotation phase in radians.
+    inc : float, optional
+        Inclination in radians.
+
+    Returns
+    -------
+    shift : ndarray
+        Doppler shift at each pixel (fractional).
+    """
     rv = radial_velocity(theta, phi, period, radius, phase, inc)
     c = 299792458.0
     shift = rv / c
@@ -190,6 +492,21 @@ def doppler_shift(theta, phi, period, radius, phase, inc=None):
 
 
 def shifted_spectra(spectra, shift):
+    """
+    Apply a Doppler shift to spectra.
+
+    Parameters
+    ----------
+    spectra : ndarray, shape (n_pixels, n_wavelength)
+        Input spectra.
+    shift : ndarray, shape (n_pixels, n_wavelength)
+        Doppler shift for each pixel and wavelength.
+
+    Returns
+    -------
+    shifted : ndarray
+        Shifted spectra.
+    """
     _, n_wavelength = spectra.shape
     spectra_ft = jnp.fft.fft(spectra, axis=1)
     k = np.fft.fftfreq(n_wavelength).reshape(1, -1)
@@ -199,6 +516,35 @@ def shifted_spectra(spectra, shift):
 
 
 def integrated_spectrum(N, theta, phi, period, radius, wv, spectra, phase, inc):
+    """
+    Compute the integrated spectrum of a rotating star.
+
+    Parameters
+    ----------
+    N : int
+        HEALPix nside.
+    theta : array_like
+        Colatitude in radians.
+    phi : array_like
+        Longitude in radians.
+    period : float
+        Rotation period in days.
+    radius : float
+        Stellar radius in solar radii.
+    wv : array_like
+        Wavelength grid.
+    spectra : ndarray
+        Spectra at each pixel.
+    phase : float
+        Rotation phase in radians.
+    inc : float
+        Inclination in radians.
+
+    Returns
+    -------
+    integrated : ndarray
+        Integrated spectrum.
+    """
     spectra = jnp.atleast_2d(spectra)
     if period is None:
         spectra_shifted = spectra
