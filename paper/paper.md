@@ -44,7 +44,9 @@ where, at any given time, $\mathbf{X}$ is constructed by accounting for:
 
 [*spotter*'s documentation](https://spotter.readthedocs.io/en/latest/) demonstrates how this linear model is applied to simulate both flux and spectral time-series for rotating stellar surfaces. To facilitate this computation, the HEALPix subdivision scheme [@healpix:2005] is employed to decompose the stellar surface into pixels.
 
-By adopting this formalism, *spotter* implements its model using simple linear algebra operations in JAX. It supports execution on hardware accelerators such as GPUs and TPUs, enabling fast and scalable simulations and inferences. This capability makes *spotter* well-suited for processing large datasets and high-resolution observations.
+![Example of a limb-darkened star whose surface has been drawn from a Gaussian Process representing Sun-like active latitudes. Left: design matrix of the map in orthographic projection. Center: Surface map of the star in the same projection. Right: Ortographic representation of the complete map.](figures/surface.png)
+
+By adopting this formalism, *spotter* implements its model using simple linear algebra operations in JAX. It supports execution on hardware accelerators such as GPUs and TPUs, enabling fast and scalable simulations and inferences. This capability makes *spotter* well-suited for processing large datasets and high-resolution observations, whether spatial or temporal.
 
 # Performance
 
