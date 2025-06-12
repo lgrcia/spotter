@@ -62,6 +62,5 @@ autoapi_template_dir = "_autoapi_templates"
 
 suppress_warnings = ["autoapi.python_import_resolution"]
 
-nb_execution_excludepatterns = ["flux_gp.ipynb"]
+nb_execution_excludepatterns = ["flux_gp.ipynb", "precision.ipynb"]
 plot_include_source = True
-nb_execution_timeout = 120
