@@ -217,7 +217,19 @@ def graticule(
     theta = np.linspace(0, 2 * np.pi, 2 * pts)
 
 
-def show(y, inc=np.pi / 2, obl=0.0, u=None, xsize=800, phase=0.0, ax=None, **kwargs):
+def show(
+    y,
+    inc=np.pi / 2,
+    obl=0.0,
+    u=None,
+    xsize=800,
+    phase=0.0,
+    ax=None,
+    radius=None,
+    period=None,
+    rv=False,
+    **kwargs,
+):
     """
     Show a rendered map with graticule.
 
@@ -243,13 +255,22 @@ def show(y, inc=np.pi / 2, obl=0.0, u=None, xsize=800, phase=0.0, ax=None, **kwa
 
     import matplotlib.pyplot as plt
 
-    kwargs.setdefault("cmap", _DEFAULT_CMAP)
+    kwargs.setdefault("cmap", "RdBu_r" if rv else _DEFAULT_CMAP)
     kwargs.setdefault("origin", "lower")
     # kwargs.setdefault("vmin", 0.0)
     # kwargs.setdefault("vmax", 1.0)
     ax = ax or plt.gca()
 
-    img = core.render(y, inc, u, phase, obl, xsize=xsize)
+    img = core.render(
+        y,
+        inc,
+        u,
+        phase,
+        obl,
+        xsize=xsize,
+        radius=radius if rv else None,
+        period=period if rv else None,
+    )
     plt.setp(ax.spines.values(), visible=False)
     ax.tick_params(left=False, labelleft=False)
     ax.tick_params(bottom=False, labelbottom=False)
@@ -260,7 +281,18 @@ def show(y, inc=np.pi / 2, obl=0.0, u=None, xsize=800, phase=0.0, ax=None, **kwa
     graticule(inc, obl, phase, ax=ax)
 
 
-def video(y, inc=None, obl=0.0, u=None, duration=4, fps=10, **kwargs):
+def video(
+    y,
+    inc=None,
+    obl=0.0,
+    u=None,
+    duration=4,
+    fps=10,
+    radius=None,
+    period=None,
+    rv=False,
+    **kwargs,
+):
     """
     Create an HTML video of a rotating map (for Jupyter notebooks).
 
@@ -278,6 +310,8 @@ def video(y, inc=None, obl=0.0, u=None, duration=4, fps=10, **kwargs):
         Duration of the video in seconds.
     fps : int, optional
         Frames per second.
+    render_fun: callable, optional
+        A function of phase that renders the star. Default is core.render
     **kwargs
         Additional plot arguments.
 
@@ -290,17 +324,25 @@ def video(y, inc=None, obl=0.0, u=None, duration=4, fps=10, **kwargs):
     import matplotlib.pyplot as plt
     from IPython import display
 
-    kwargs.setdefault("cmap", _DEFAULT_CMAP)
+    kwargs.setdefault("cmap", "RdBu_r" if rv else _DEFAULT_CMAP)
     kwargs.setdefault("origin", "lower")
-    kwargs.setdefault("vmin", y.min())
-    kwargs.setdefault("vmax", y.max())
+
+    def render_fun(phase):
+        return core.render(
+            y,
+            inc,
+            u,
+            phase,
+            obl,
+            period=period if rv else None,
+            radius=radius if rv else None,
+        )
 
     inc = inc or 0.0
 
     fig, ax = plt.subplots(figsize=(3, 3))
-    im = plt.imshow(
-        core.render(y, inc, u, 0.0, obl=obl), extent=(-1, 1, -1, 1), **kwargs
-    )
+    im0 = render_fun(0.0)
+    im = plt.imshow(im0, extent=(-1, 1, -1, 1), **kwargs)
     plt.axis("off")
     plt.tight_layout()
     ax.set_frame_on(False)
@@ -310,7 +352,7 @@ def video(y, inc=None, obl=0.0, u=None, duration=4, fps=10, **kwargs):
     def update(frame):
         a = im.get_array()
         phase = np.pi * 2 * frame / frames
-        a = core.render(y, inc, u, phase, obl)
+        a = render_fun(phase)
         for art in list(ax.lines):
             art.remove()
         graticule(inc, ax=ax, theta=phase, obl=obl)

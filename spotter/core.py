@@ -319,7 +319,9 @@ def soft_spot(N, latitude, longitude, radius):
     return profile / jnp.max(profile)
 
 
-def render(y, inc=None, u=None, phase=0.0, obl=0.0, xsize=800):
+def render(
+    y, inc=None, u=None, phase=0.0, obl=0.0, xsize=800, period=None, radius=None
+):
     """
     Render a HEALPix map as an orthographic projection.
 
@@ -345,12 +347,20 @@ def render(y, inc=None, u=None, phase=0.0, obl=0.0, xsize=800):
     """
     import matplotlib.pyplot as plt
 
-    X = vec(y)
+    N, n = _N_or_Y_to_N_n(y)
+    X = vec(N)
+
+    phi, theta = hp.pix2ang(N, range(n))
+
+    if period is not None and radius is not None:
+        rv = radial_velocity(theta, phi, period, radius, phase, inc)
+    else:
+        rv = 1
 
     limb_darkening = mask_projected_limb(X, phase, inc, u)[2]
     rotated = hp.Rotator(
         rot=[phase, np.pi / 2 - inc or 0.0, obl or 0.0], deg=False
-    ).rotate_map_pixel(y * limb_darkening)
+    ).rotate_map_pixel(y * limb_darkening * rv)
 
     projected_map = hp.orthview(
         rotated, half_sky=True, return_projected_map=True, xsize=xsize

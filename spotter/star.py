@@ -371,7 +371,7 @@ class Star(eqx.Module):
         return core.vec(self.sides)
 
 
-def show(star: Star, phase: ArrayLike = 0.0, ax=None, xsize=800, **kwargs):
+def show(star: Star, phase: ArrayLike = 0.0, ax=None, xsize=800, rv=False, **kwargs):
     """
     Show the star map. If `star.y` is 2D, the first map is shown.
 
@@ -393,6 +393,9 @@ def show(star: Star, phase: ArrayLike = 0.0, ax=None, xsize=800, **kwargs):
         star.inc if star.inc is not None else np.pi / 2,
         star.obl if star.obl is not None else 0.0,
         star.u[0] if star.u is not None else None,
+        radius=(star.radius or 1.0) if rv else None,
+        period=(star.period or None) if rv else None,
+        rv=rv,
         phase=phase,
         ax=ax,
         xsize=xsize,
@@ -400,7 +403,7 @@ def show(star: Star, phase: ArrayLike = 0.0, ax=None, xsize=800, **kwargs):
     )
 
 
-def video(star: Star, duration: int = 4, fps: int = 10, **kwargs):
+def video(star: Star, duration: int = 4, fps: int = 10, rv=False, **kwargs):
     """
     Create an HTML video of the star map (for Jupyter notebooks).
 
@@ -420,6 +423,9 @@ def video(star: Star, duration: int = 4, fps: int = 10, **kwargs):
         star.inc if star.inc is not None else np.pi / 2,
         star.obl if star.obl is not None else 0.0,
         star.u[0] if star.u is not None else None,
+        radius=star.radius if rv else None,
+        period=star.period if rv else None,
+        rv=rv,
         duration=duration,
         fps=fps,
         **kwargs,
