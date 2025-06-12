@@ -3,10 +3,9 @@ import jax
 import numpy as np
 import pytest
 
-from spotter import Star
+from spotter import Star, core
 from spotter.light_curves import light_curve, transit_light_curve
 from spotter.utils import ylm_to_hp
-from spotter import core
 
 
 @pytest.mark.parametrize("deg", (3, 7))
@@ -51,6 +50,7 @@ def test_jaxoplanet_spot_occulation():
     from jaxoplanet.starry import Surface, Ylm
     from jaxoplanet.starry.light_curves import surface_light_curve
 
+    np.random.seed(42)
     y = np.array([1, *(1e-1 * np.random.randn((5 + 1) ** 2 - 1))])
     u = (0,)
 
