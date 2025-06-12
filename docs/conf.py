@@ -64,3 +64,4 @@ suppress_warnings = ["autoapi.python_import_resolution"]
 
 nb_execution_excludepatterns = ["flux_gp.ipynb"]
 plot_include_source = True
+nb_execution_timeout = 120
