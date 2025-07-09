@@ -15,8 +15,8 @@ from spotter import core, light_curves
 from spotter.star import Star
 
 
-@partial(jnp.vectorize, excluded=(0,), signature="()->(n)")
-def spectrum(star: Star, time: float) -> ArrayLike:
+@partial(jnp.vectorize, excluded=(0,2), signature="()->(n)")
+def spectrum(star: Star, time: float, normalize: bool) -> ArrayLike:
     """
     Compute the integrated spectrum of a rotating Star.
 
@@ -43,6 +43,7 @@ def spectrum(star: Star, time: float) -> ArrayLike:
         star.y,
         star.phase(time),
         star.inc,
+        normalize
     )
 
 
