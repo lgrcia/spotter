@@ -28,13 +28,15 @@ Documentation can be found at [spotter.readthedocs.io](https://spotter.readthedo
 
 ## Installation
 
-For now only locally with
+To install *spotter* from pypi
+    
+```bash
+pip install spotter
+```
 
-```
-pip install -e spotter
-```
+To get the latest version under development, clone the repository and install the package using pip:
 
-with *spotter* cloned using
-```
+```bash
 git clone https://github.com/lgrcia/spotter
+pip install -e spotter
 ```
