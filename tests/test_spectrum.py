@@ -20,6 +20,7 @@ def test_spectrum():
     spectra = np.random.rand(len(wv), star.size)
     star = star.set(y=spectra)
     assert doppler.spectrum(star, [0]).shape == (1, len(wv))
+    assert doppler.spectrum(star, [0, 1, 2]).shape == (3, len(wv))
 
 
 def test_no_period():
