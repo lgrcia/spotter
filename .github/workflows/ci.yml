@@ -70,7 +70,7 @@ jobs:
   publish:
     environment:
       name: pypi
-      url: https://pypi.org/p/fitsm
+      url: https://pypi.org/p/spotter
     permissions:
       id-token: write
     needs: [tests, build]
