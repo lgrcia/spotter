@@ -533,7 +533,7 @@ def shifted_spectra(spectra, shift):
     return jnp.real(shifted)
 
 
-def integrated_spectrum(N, theta, phi, period, radius, wv, spectra, phase, inc):
+def integrated_spectrum(N, theta, phi, period, radius, wv, spectra, phase, inc, normalize = True):
     """
     Compute the integrated spectrum of a rotating star.
 
@@ -573,6 +573,9 @@ def integrated_spectrum(N, theta, phi, period, radius, wv, spectra, phase, inc):
         shift = w_shift[:, None] * wv / dw
         limb_geometry = projected * mask * limb
         spectra_shifted = shifted_spectra(spectra.T, shift)
-    return jnp.sum(spectra_shifted * limb_geometry[:, None], 0) / jnp.sum(
-        limb_geometry[:, None] * spectra.T
-    )
+        
+        if normalize:
+            integrated_spec =  jnp.sum(spectra_shifted * limb_geometry[:, None], 0) / jnp.sum(limb_geometry[:, None] * spectra.T)
+        else:
+            integrated_spec =  jnp.sum(spectra_shifted * limb_geometry[:, None], 0)
+        return integrated_spec

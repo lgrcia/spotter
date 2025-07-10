@@ -15,8 +15,7 @@ from spotter import core, light_curves
 from spotter.star import Star
 
 
-@partial(jnp.vectorize, excluded=(0,), signature="()->(n)")
-def spectrum(star: Star, time: float) -> ArrayLike:
+def spectrum(star: Star, time: float, normalize: bool = True) -> ArrayLike:
     """
     Compute the integrated spectrum of a rotating Star.
 
@@ -26,6 +25,8 @@ def spectrum(star: Star, time: float) -> ArrayLike:
         Star object.
     time : float
         Time in days.
+    normalize : bool, optional
+
 
     Returns
     -------
@@ -33,17 +34,23 @@ def spectrum(star: Star, time: float) -> ArrayLike:
         Integrated spectrum.
     """
     phi, theta = hp.pix2ang(star.sides, range(hp.nside2npix(star.sides)))
-    return core.integrated_spectrum(
-        star.sides,
-        theta,
-        phi,
-        star.period,
-        star.radius,
-        star.wv,
-        star.y,
-        star.phase(time),
-        star.inc,
-    )
+    
+    def impl(star, time):
+        return core.integrated_spectrum(
+            star.sides,
+            theta,
+            phi,
+            star.period,
+            star.radius,
+            star.wv,
+            star.y,
+            star.phase(time),
+            star.inc,
+            normalize=normalize,
+        )
+
+    return jnp.vectorize(impl, excluded=(0,), signature="()->(n)")(star, time)
+
 
 
 def rv_design_matrix(star: Star, time: float) -> ArrayLike:
