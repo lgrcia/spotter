@@ -533,7 +533,7 @@ def shifted_spectra(spectra, shift):
     return jnp.real(shifted)
 
 
-def integrated_spectrum(N, theta, phi, period, radius, wv, spectra, phase, inc, normalize):
+def integrated_spectrum(N, theta, phi, period, radius, wv, spectra, phase, inc, normalize = True):
     """
     Compute the integrated spectrum of a rotating star.
 
