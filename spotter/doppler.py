@@ -33,8 +33,18 @@ def spectrum(star: Star, time: float, normalize: bool = True) -> ArrayLike:
     spectrum : ndarray
         Integrated spectrum.
     """
+    if star.wv is None:
+        raise ValueError("Star.wv must be set.")
+
+    if star.wv.shape[0] != star.y.shape[0]:
+        raise ValueError(
+            "The star spectrum (Star.y) must have the same number of wavelength as the "
+            f"wavelengths provided (Star.wv).\nFound Star.wv.shape[0] = {star.wv.shape[0]} "
+            f"and Star.y.shape[0] = {star.y.shape[0]}"
+        )
+
     phi, theta = hp.pix2ang(star.sides, range(hp.nside2npix(star.sides)))
-    
+
     def impl(star, time):
         return core.integrated_spectrum(
             star.sides,
@@ -50,7 +60,6 @@ def spectrum(star: Star, time: float, normalize: bool = True) -> ArrayLike:
         )
 
     return jnp.vectorize(impl, excluded=(0,), signature="()->(n)")(star, time)
-
 
 
 def rv_design_matrix(star: Star, time: float) -> ArrayLike:
