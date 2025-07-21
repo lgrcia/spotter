@@ -105,7 +105,7 @@ def equator_coords(phi=None, inc=None, obl=None):
     return jnp.array([x, y, z])
 
 
-def mask_projected_limb(X, phase=None, inc=None, u=None, obl=None):
+def mask_projected_limb(X, N, phase=None, inc=None, u=None, obl=None):
     """
     Compute mask, projected area, and limb darkening for visible pixels.
 
@@ -134,7 +134,7 @@ def mask_projected_limb(X, phase=None, inc=None, u=None, obl=None):
     d = distance(X, equator_coords(phase, inc, obl))
     mask = d < jnp.pi / 2
     z = jnp.cos(d)
-    projected_area = z
+    projected_area = z * hp.nside2pixarea(N)
     if u is not None:
         u = jnp.atleast_1d(u)
         terms = jnp.array([un * (1 - z) ** (n + 1) for n, un in enumerate(u)])
@@ -211,7 +211,8 @@ def design_matrix(N_or_y, phase=None, inc=None, u=None, obl=None):
         Design matrix.
     """
     X = vec(N_or_y)
-    mask, projected_area, limb_darkening = mask_projected_limb(X, phase, inc, u, obl)
+    N, n = _N_or_Y_to_N_n(N_or_y)
+    mask, projected_area, limb_darkening = mask_projected_limb(X, N, phase, inc, u, obl)
     geometry = mask * projected_area
     return limb_darkening * geometry / (geometry * limb_darkening).sum()
 
@@ -357,7 +358,7 @@ def render(
     else:
         rv = 1
 
-    limb_darkening = mask_projected_limb(X, phase, inc, u)[2]
+    limb_darkening = mask_projected_limb(X, N, phase, inc, u)[2]
     rotated = hp.Rotator(
         rot=[phase, np.pi / 2 - inc or 0.0, obl or 0.0], deg=False
     ).rotate_map_pixel(y * limb_darkening * rv)
@@ -397,8 +398,8 @@ def amplitude(N_or_y, inc=None, u=None, undersampling: int = 3) -> callable:
     phases = jnp.arange(0, 2 * jnp.pi, hp_resolution)
 
     mask, projected_area, limb_darkening = jax.jit(
-        jax.vmap(jax.jit(mask_projected_limb), in_axes=(None, 0, None, None))
-    )(X, phases, inc, u)
+        jax.vmap(jax.jit(mask_projected_limb), in_axes=(None, None, 0, None, None))
+    )(X, N, phases, inc, u)
 
     geometry = mask * projected_area
     norm = (geometry * limb_darkening).sum(1)
@@ -567,12 +568,11 @@ def integrated_spectrum(
     """
     spectra = jnp.atleast_2d(spectra)
     if period is None:
-        mask, projected, limb = mask_projected_limb(vec(N), 0.0, inc=inc)
+        mask, projected, limb = mask_projected_limb(vec(N), N, 0.0, inc=inc)
         limb_geometry = projected * mask * limb
         spectra_shifted = spectra.T
-
     else:
-        mask, projected, limb = mask_projected_limb(vec(N), phase, inc=inc)
+        mask, projected, limb = mask_projected_limb(vec(N), N, phase, inc=inc)
         w_shift = doppler_shift(theta, phi, period, radius, phase)
         dw = wv[1] - wv[0]
         shift = w_shift[:, None] * wv / dw
