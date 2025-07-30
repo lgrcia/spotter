@@ -32,8 +32,6 @@ def design_matrix(star: Star, time: ArrayLike) -> ArrayLike:
     matrix : ndarray
         Design matrix.
     """
-    import pdb
-    pdb.set_trace()
     if star.u is not None:
         if len(star.y) == 1:
             return jax.vmap(
@@ -137,8 +135,6 @@ def transit_design_matrix(star, x, y, z, r, time=None):
     )
 
     transited_y = utils.sigmoid(distance - r, 1000.0)
-    import pdb
-    pdb.set_trace()
     return X * jnp.where(z >= 0, transited_y, jnp.ones_like(transited_y))
 
 
