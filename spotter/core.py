@@ -214,7 +214,8 @@ def design_matrix(N_or_y, phase=None, inc=None, u=None, obl=None):
     """
     mask, projected_area, limb_darkening = mask_projected_limb(N_or_y, phase, inc, u, obl)
     geometry = mask * projected_area
-    return limb_darkening * geometry / (geometry * limb_darkening).sum()
+    # return limb_darkening * geometry / (geometry * limb_darkening).sum()
+    return limb_darkening * geometry
 
 
 def flux(y, inc=None, u=None, phase=None, obl=None):
