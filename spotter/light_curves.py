@@ -15,7 +15,6 @@ from spotter import core, utils
 from spotter.star import Star, transited_star
 
 
-@partial(jnp.vectorize, excluded=(0, 2), signature="()->(m,n)")
 def design_matrix(star: Star, time: ArrayLike, normalize: bool = True) -> ArrayLike:
     """
     Compute the design matrix for a rotating Star.
@@ -32,26 +31,29 @@ def design_matrix(star: Star, time: ArrayLike, normalize: bool = True) -> ArrayL
     matrix : ndarray
         Design matrix.
     """
-    if star.u is not None:
-        if len(star.y) == 1:
-            return jax.vmap(
-                lambda u: core.design_matrix(star.y[0], star.phase(time), star.inc, u, normalize = normalize)
-            )(star.u)
-        else:
-            if len(star.u) == 1:
+    def impl(star, time):
+        if star.u is not None:
+            if len(star.y) == 1:
                 return jax.vmap(
-                    lambda y: core.design_matrix(
-                        y, star.phase(time), star.inc, star.u[0], normalize = normalize
-                    )
-                )(star.y)
+                    lambda u: core.design_matrix(star.y[0], star.phase(time), star.inc, u, normalize = normalize)
+                )(star.u)
             else:
-                return jax.vmap(
-                    lambda y, u: core.design_matrix(y, star.phase(time), star.inc, u, normalize = normalize)
-                )(star.y, star.u)
-    else:
-        return jax.vmap(
-            lambda y: core.design_matrix(y, star.phase(time), star.inc, star.u, normalize = normalize)
-        )(star.y)
+                if len(star.u) == 1:
+                    return jax.vmap(
+                        lambda y: core.design_matrix(
+                            y, star.phase(time), star.inc, star.u[0], normalize = normalize
+                        )
+                    )(star.y)
+                else:
+                    return jax.vmap(
+                        lambda y, u: core.design_matrix(y, star.phase(time), star.inc, u, normalize = normalize)
+                    )(star.y, star.u)
+        else:
+            return jax.vmap(
+                lambda y: core.design_matrix(y, star.phase(time), star.inc, star.u, normalize = normalize)
+            )(star.y)
+    
+    return jnp.vectorize(impl, excluded=(0,), signature="()->(m,n)")(star, time)
 
 
 def light_curve(star: Star, time: ArrayLike, normalize=True) -> ArrayLike:
