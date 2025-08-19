@@ -15,6 +15,19 @@ from spotter import core, light_curves
 from spotter.star import Star
 
 
+def _check_spectrum(star):
+    
+    if star.wv is None:
+        raise ValueError("Star.wv must be set.")
+
+    if star.wv.shape[0] != star.y.shape[0]:
+        raise ValueError(
+            "The star spectrum (Star.y) must have the same number of wavelength as the "
+            f"wavelengths provided (Star.wv).\nFound Star.wv.shape[0] = {star.wv.shape[0]} "
+            f"and Star.y.shape[0] = {star.y.shape[0]}"
+        )
+        
+
 def spectrum(star: Star, time: float, normalize: bool = True) -> ArrayLike:
     """
     Compute the integrated spectrum of a rotating Star.
@@ -33,21 +46,19 @@ def spectrum(star: Star, time: float, normalize: bool = True) -> ArrayLike:
     spectrum : ndarray
         Integrated spectrum.
     """
-    if star.wv is None:
-        raise ValueError("Star.wv must be set.")
-
-    if star.wv.shape[0] != star.y.shape[0]:
-        raise ValueError(
-            "The star spectrum (Star.y) must have the same number of wavelength as the "
-            f"wavelengths provided (Star.wv).\nFound Star.wv.shape[0] = {star.wv.shape[0]} "
-            f"and Star.y.shape[0] = {star.y.shape[0]}"
-        )
+    _check_spectrum(star)
 
     phi, theta = hp.pix2ang(star.sides, range(hp.nside2npix(star.sides)))
-
+    
     def impl(star, time):
+        design_matrix = core.design_matrix(star.sides, 
+                                    phase = star.phase(time), 
+                                    inc = star.inc,
+                                    u = star.u,
+                                    obl = star.obl)
+            
         return core.integrated_spectrum(
-            star.sides,
+            design_matrix,
             theta,
             phi,
             star.period,
@@ -55,7 +66,6 @@ def spectrum(star: Star, time: float, normalize: bool = True) -> ArrayLike:
             star.wv,
             star.y,
             star.phase(time),
-            star.inc,
             normalize=normalize,
         )
 
@@ -80,39 +90,28 @@ def transit_spectrum(star: Star, time: float, x:float, y:float, z:float, r:float
     spectrum : ndarray
         Integrated spectrum.
     """
-    if star.wv is None:
-        raise ValueError("Star.wv must be set.")
-
-    if star.wv.shape[0] != star.y.shape[0]:
-        raise ValueError(
-            "The star spectrum (Star.y) must have the same number of wavelength as the "
-            f"wavelengths provided (Star.wv).\nFound Star.wv.shape[0] = {star.wv.shape[0]} "
-            f"and Star.y.shape[0] = {star.y.shape[0]}"
-        )
+    _check_spectrum(star)
 
     phi, theta = hp.pix2ang(star.sides, range(hp.nside2npix(star.sides)))
 
     def impl(star, time, x, y, z, r):
-        
-        transit_design_matrix = light_curves.transit_design_matrix(star, x, y, z, r, time=time)
-        
-        w_shift = core.doppler_shift(theta, phi, star.period, star.radius, star.phase(time))
-        dw = star.wv[1] - star.wv[0]
-        shift = w_shift[:, None] * star.wv / dw
-        spectra = jnp.atleast_2d(star.y)
-        spectra_shifted = core.shifted_spectra(spectra.T, shift)
+            
+        design_matrix = light_curves.transit_design_matrix(star, x, y, z, r, time=time)
 
-        if normalize:
-            integrated_spec = jnp.sum(
-            spectra_shifted * transit_design_matrix.T, 0
-        ) / jnp.sum(transit_design_matrix.T * spectra.T)
-        else:
-            integrated_spec = jnp.einsum("ij,ij->j", transit_design_matrix.T, spectra_shifted)
-        return integrated_spec
+        return core.integrated_spectrum(
+            design_matrix,
+            theta,
+            phi,
+            star.period,
+            star.radius,
+            star.wv,
+            star.y,
+            star.phase(time),
+            normalize=normalize,
+        )
         
     return jnp.vectorize(impl, excluded=(0,), signature="(),(),(),(),()->(n)")(star, time, x, y, z, r)
     
-
 
 def rv_design_matrix(star: Star, time: float) -> ArrayLike:
     """
