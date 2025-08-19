@@ -55,7 +55,7 @@ def spectrum(star: Star, time: float, normalize: bool = True) -> ArrayLike:
                                     phase = star.phase(time), 
                                     inc = star.inc,
                                     u = star.u,
-                                    obl = star.obl)
+                                    obl = star.obl, normalize = normalize)
             
         return core.integrated_spectrum(
             design_matrix,
@@ -96,7 +96,7 @@ def transit_spectrum(star: Star, time: float, x:float, y:float, z:float, r:float
 
     def impl(star, time, x, y, z, r):
             
-        design_matrix = light_curves.transit_design_matrix(star, x, y, z, r, time=time)
+        design_matrix = light_curves.transit_design_matrix(star, x, y, z, r, time=time, normalize = normalize)
 
         return core.integrated_spectrum(
             design_matrix,

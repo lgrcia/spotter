@@ -190,7 +190,7 @@ def vec(N_or_y):
     return np.array(hp.pix2vec(N, range(n))).T
 
 
-def design_matrix(N_or_y, phase=None, inc=None, u=None, obl=None):
+def design_matrix(N_or_y, phase=None, inc=None, u=None, obl=None, normalize = True):
     """
     Compute the flux design matrix for a HEALPix map.
 
@@ -214,7 +214,10 @@ def design_matrix(N_or_y, phase=None, inc=None, u=None, obl=None):
     """
     mask, projected_area, limb_darkening = mask_projected_limb(N_or_y, phase, inc, u, obl)
     geometry = mask * projected_area
-    return limb_darkening * geometry
+    if normalize:
+        return limb_darkening * geometry / (geometry * limb_darkening).sum()
+    else:
+        return limb_darkening * geometry
 
 
 def flux(y, inc=None, u=None, phase=None, obl=None):

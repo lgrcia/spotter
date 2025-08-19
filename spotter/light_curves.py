@@ -15,8 +15,8 @@ from spotter import core, utils
 from spotter.star import Star, transited_star
 
 
-@partial(jnp.vectorize, excluded=(0,), signature="()->(m,n)")
-def design_matrix(star: Star, time: ArrayLike) -> ArrayLike:
+@partial(jnp.vectorize, excluded=(0, 2), signature="()->(m,n)")
+def design_matrix(star: Star, time: ArrayLike, normalize: bool = True) -> ArrayLike:
     """
     Compute the design matrix for a rotating Star.
 
@@ -35,22 +35,22 @@ def design_matrix(star: Star, time: ArrayLike) -> ArrayLike:
     if star.u is not None:
         if len(star.y) == 1:
             return jax.vmap(
-                lambda u: core.design_matrix(star.y[0], star.phase(time), star.inc, u)
+                lambda u: core.design_matrix(star.y[0], star.phase(time), star.inc, u, normalize = normalize)
             )(star.u)
         else:
             if len(star.u) == 1:
                 return jax.vmap(
                     lambda y: core.design_matrix(
-                        y, star.phase(time), star.inc, star.u[0]
+                        y, star.phase(time), star.inc, star.u[0], normalize = normalize
                     )
                 )(star.y)
             else:
                 return jax.vmap(
-                    lambda y, u: core.design_matrix(y, star.phase(time), star.inc, u)
+                    lambda y, u: core.design_matrix(y, star.phase(time), star.inc, u, normalize = normalize)
                 )(star.y, star.u)
     else:
         return jax.vmap(
-            lambda y: core.design_matrix(y, star.phase(time), star.inc, star.u)
+            lambda y: core.design_matrix(y, star.phase(time), star.inc, star.u, normalize = normalize)
         )(star.y)
 
 
@@ -81,7 +81,7 @@ def light_curve(star: Star, time: ArrayLike, normalize=True) -> ArrayLike:
     return jnp.vectorize(impl, excluded=(0,), signature="()->(n)")(star, time).T * norm
 
 
-def transit_design_matrix(star, x, y, z, r, time=None):
+def transit_design_matrix(star, x, y, z, r, time=None, normalize = True):
     """
     Compute the design matrix for a transited Star.
 
@@ -105,7 +105,7 @@ def transit_design_matrix(star, x, y, z, r, time=None):
     matrix : ndarray
         Transit design matrix.
     """
-    X = design_matrix(star, time)
+    X = design_matrix(star, time, normalize)
 
     from jax.scipy.spatial.transform import Rotation
 
