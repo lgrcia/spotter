@@ -28,7 +28,7 @@ def _check_spectrum(star):
         )
         
 
-def spectrum(star: Star, time: float, normalize: bool = True) -> ArrayLike:
+def spectrum(star: Star, time: ArrayLike, normalize: bool = True) -> ArrayLike:
     """
     Compute the integrated spectrum of a rotating Star.
 
@@ -36,7 +36,7 @@ def spectrum(star: Star, time: float, normalize: bool = True) -> ArrayLike:
     ----------
     star : Star
         Star object.
-    time : float
+    time : ArrayLike
         Time in days.
     normalize : bool, optional
 
@@ -51,11 +51,7 @@ def spectrum(star: Star, time: float, normalize: bool = True) -> ArrayLike:
     phi, theta = hp.pix2ang(star.sides, range(hp.nside2npix(star.sides)))
     
     def impl(star, time):
-        design_matrix = core.design_matrix(star.sides, 
-                                    phase = star.phase(time), 
-                                    inc = star.inc,
-                                    u = star.u,
-                                    obl = star.obl, normalize = normalize)
+        design_matrix = light_curves.design_matrix(star, time, normalize = normalize)
             
         return core.integrated_spectrum(
             design_matrix,

@@ -575,7 +575,6 @@ def integrated_spectrum(
         dw = wv[1] - wv[0]
         shift = w_shift[:, None] * wv / dw
         spectra_shifted = shifted_spectra(spectra.T, shift)
-
     if normalize:
         integrated_spec = jnp.sum(
             spectra_shifted * design_matrix.T, 0
