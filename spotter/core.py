@@ -472,7 +472,7 @@ def radial_velocity(theta, phi, period, radius, phase, inc=None):
     omega = jnp.pi * 2 / period_s  # angular velocity
     radius_m = radius * 695700000.0  # convert solar radii to meters
     sin_phi = np.sin(phi)  # numpy here! as phi is static
-    rv = radius_m * omega * jnp.sin(theta - phase) * sin_phi
+    rv = radius_m * omega * jnp.sin(phase - theta) * sin_phi
     if inc is not None:
         rv = rv * jnp.sin(inc)
     return rv
