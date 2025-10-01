@@ -66,7 +66,7 @@ On CPU, our benchmark is done on the single core of an Apple M2 max chip, while 
 
 ## Precision
 
-We validate the precision of *spotter*'s flux forward model against models evaluated with *starry* [@luger:2019]. We make these precision benchmarks part of the unit tests of *spotter*.
+We validate the accuracy of spotter’s flux forward model against reference models computed with starry [@luger:2019]. The light curve accuracy achieved by spotter depends on the stellar surface resolution, determined by the number of HEALPix subdivisions. Under optimal settings, spotter produces spectra and light curves with relative precision of 1 ppm. These benchmarks are incorporated into the unit tests of spotter, and we provide [documentation guidelines](https://spotter.readthedocs.io/en/latest/notebooks/precision/) to select the appropriate surface resolution for a desired precision.
 
 # Acknowledgements
 
