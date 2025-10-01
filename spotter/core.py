@@ -190,7 +190,7 @@ def vec(N_or_y):
     return np.array(hp.pix2vec(N, range(n))).T
 
 
-def design_matrix(N_or_y, phase=None, inc=None, u=None, obl=None):
+def design_matrix(N_or_y, phase=None, inc=None, u=None, obl=None, normalize = True):
     """
     Compute the flux design matrix for a HEALPix map.
 
@@ -214,7 +214,10 @@ def design_matrix(N_or_y, phase=None, inc=None, u=None, obl=None):
     """
     mask, projected_area, limb_darkening = mask_projected_limb(N_or_y, phase, inc, u, obl)
     geometry = mask * projected_area
-    return limb_darkening * geometry / (geometry * limb_darkening).sum()
+    if normalize:
+        return limb_darkening * geometry / (geometry * limb_darkening).sum()
+    else:
+        return limb_darkening * geometry
 
 
 def flux(y, inc=None, u=None, phase=None, obl=None):
@@ -533,15 +536,15 @@ def shifted_spectra(spectra, shift):
 
 
 def integrated_spectrum(
-    N, theta, phi, period, radius, wv, spectra, phase, inc, normalize=True
+    design_matrix, theta, phi, period, radius, wv, spectra, phase, normalize=True
 ):
     """
     Compute the integrated spectrum of a rotating star.
 
     Parameters
     ----------
-    N : int
-        HEALPix nside.
+    design_matrix : array_like
+        Flux design matrix for a HEALPix map.
     theta : array_like
         Colatitude in radians.
     phi : array_like
@@ -566,22 +569,17 @@ def integrated_spectrum(
     """
     spectra = jnp.atleast_2d(spectra)
     if period is None:
-        mask, projected, limb = mask_projected_limb(N, 0.0, inc=inc)
-        limb_geometry = projected * mask * limb
         spectra_shifted = spectra.T
     else:
-        mask, projected, limb = mask_projected_limb(N, phase, inc=inc)
         w_shift = doppler_shift(theta, phi, period, radius, phase)
         dw = wv[1] - wv[0]
         shift = w_shift[:, None] * wv / dw
-        limb_geometry = projected * mask * limb
         spectra_shifted = shifted_spectra(spectra.T, shift)
-
     if normalize:
         integrated_spec = jnp.sum(
-            spectra_shifted * limb_geometry[:, None], 0
-        ) / jnp.sum(limb_geometry[:, None] * spectra.T)
+            spectra_shifted * design_matrix.T, 0
+        ) / jnp.sum(design_matrix.T * spectra.T)
     else:
-        integrated_spec = jnp.sum(spectra_shifted * limb_geometry[:, None], 0)
+        integrated_spec = jnp.einsum("ij,ij->j", design_matrix.T, spectra_shifted)
 
     return integrated_spec

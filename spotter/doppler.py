@@ -15,7 +15,60 @@ from spotter import core, light_curves
 from spotter.star import Star
 
 
-def spectrum(star: Star, time: float, normalize: bool = True) -> ArrayLike:
+def _check_spectrum(star):
+    
+    if star.wv is None:
+        raise ValueError("Star.wv must be set.")
+
+    if star.wv.shape[0] != star.y.shape[0]:
+        raise ValueError(
+            "The star spectrum (Star.y) must have the same number of wavelength as the "
+            f"wavelengths provided (Star.wv).\nFound Star.wv.shape[0] = {star.wv.shape[0]} "
+            f"and Star.y.shape[0] = {star.y.shape[0]}"
+        )
+        
+
+def spectrum(star: Star, time: ArrayLike, normalize: bool = True) -> ArrayLike:
+    """
+    Compute the integrated spectrum of a rotating Star.
+
+    Parameters
+    ----------
+    star : Star
+        Star object.
+    time : ArrayLike
+        Time in days.
+    normalize : bool, optional
+
+
+    Returns
+    -------
+    spectrum : ndarray
+        Integrated spectrum.
+    """
+    _check_spectrum(star)
+
+    phi, theta = hp.pix2ang(star.sides, range(hp.nside2npix(star.sides)))
+    
+    def impl(star, time):
+        design_matrix = light_curves.design_matrix(star, time, normalize = normalize)
+            
+        return core.integrated_spectrum(
+            design_matrix,
+            theta,
+            phi,
+            star.period,
+            star.radius,
+            star.wv,
+            star.y,
+            star.phase(time),
+            normalize=normalize,
+        )
+
+    return jnp.vectorize(impl, excluded=(0,), signature="()->(n)")(star, time)
+
+
+def transit_spectrum(star: Star, time: float, x:float, y:float, z:float, r:float, normalize: bool = True) -> ArrayLike:
     """
     Compute the integrated spectrum of a rotating Star.
 
@@ -33,21 +86,16 @@ def spectrum(star: Star, time: float, normalize: bool = True) -> ArrayLike:
     spectrum : ndarray
         Integrated spectrum.
     """
-    if star.wv is None:
-        raise ValueError("Star.wv must be set.")
-
-    if star.wv.shape[0] != star.y.shape[0]:
-        raise ValueError(
-            "The star spectrum (Star.y) must have the same number of wavelength as the "
-            f"wavelengths provided (Star.wv).\nFound Star.wv.shape[0] = {star.wv.shape[0]} "
-            f"and Star.y.shape[0] = {star.y.shape[0]}"
-        )
+    _check_spectrum(star)
 
     phi, theta = hp.pix2ang(star.sides, range(hp.nside2npix(star.sides)))
 
-    def impl(star, time):
+    def impl(star, time, x, y, z, r):
+            
+        design_matrix = light_curves.transit_design_matrix(star, x, y, z, r, time=time, normalize = normalize)
+
         return core.integrated_spectrum(
-            star.sides,
+            design_matrix,
             theta,
             phi,
             star.period,
@@ -55,12 +103,11 @@ def spectrum(star: Star, time: float, normalize: bool = True) -> ArrayLike:
             star.wv,
             star.y,
             star.phase(time),
-            star.inc,
             normalize=normalize,
         )
-
-    return jnp.vectorize(impl, excluded=(0,), signature="()->(n)")(star, time)
-
+        
+    return jnp.vectorize(impl, excluded=(0,), signature="(),(),(),(),()->(n)")(star, time, x, y, z, r)
+    
 
 def rv_design_matrix(star: Star, time: float) -> ArrayLike:
     """
