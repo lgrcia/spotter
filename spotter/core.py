@@ -536,7 +536,7 @@ def shifted_spectra(spectra, shift):
 
 
 def integrated_spectrum(
-    design_matrix, theta, phi, period, radius, wv, spectra, phase, normalize=True
+    design_matrix, theta, phi, period, radius, wv, spectra, phase, inc = None, normalize=True
 ):
     """
     Compute the integrated spectrum of a rotating star.
@@ -571,7 +571,7 @@ def integrated_spectrum(
     if period is None:
         spectra_shifted = spectra.T
     else:
-        w_shift = doppler_shift(theta, phi, period, radius, phase)
+        w_shift = doppler_shift(theta, phi, period, radius, phase, inc=inc)
         dw = wv[1] - wv[0]
         shift = w_shift[:, None] * wv / dw
         spectra_shifted = shifted_spectra(spectra.T, shift)

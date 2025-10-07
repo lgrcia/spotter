@@ -62,6 +62,7 @@ def spectrum(star: Star, time: ArrayLike, normalize: bool = True) -> ArrayLike:
             star.wv,
             star.y,
             star.phase(time),
+            inc = star.inc,
             normalize=normalize,
         )
 
@@ -103,6 +104,7 @@ def transit_spectrum(star: Star, time: float, x:float, y:float, z:float, r:float
             star.wv,
             star.y,
             star.phase(time),
+            inc = star.inc,
             normalize=normalize,
         )
         
