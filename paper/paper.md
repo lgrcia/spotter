@@ -13,11 +13,16 @@ authors:
   - name: Benjamin V. Rackham
     orcid: 0000-0002-3627-1676
     affiliation: 2
+  - name: Vatsal Panwar
+    orcid: 0000-0002-2513-4465
+    affiliation: 3
 affiliations:
  - name: Center for Computational Astrophysics, Flatiron Institute, New York, NY, USA
    index: 1
  - name: Department of Earth, Atmospheric and Planetary Science, Massachusetts Institute of Technology, MA, USA
    index: 2
+ - name: Center for Exoplanets and Habitability, University of Warwick, Coventry CV47AL, UK
+   index: 3
 date: 01 January 2025
 bibliography: paper.bib
 ---
