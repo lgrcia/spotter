@@ -21,7 +21,7 @@ affiliations:
    index: 1
  - name: Department of Earth, Atmospheric and Planetary Science, Massachusetts Institute of Technology, MA, USA
    index: 2
- - name: Center for Exoplanets and Habitability, University of Warwick, Coventry CV47AL, UK
+ - name: School of Physics and Astronomy, University of Birmingham, Birmingham, England, GB
    index: 3
 date: 01 January 2025
 bibliography: paper.bib
