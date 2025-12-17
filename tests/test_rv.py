@@ -31,5 +31,5 @@ def test_jaxoplanet(deg, u):
     # import astropy.units as u
     # (1*u.m/u.s).to("R_sun/day").value
     conversion = 0.00012419146183699872
-    calc = -radial_velocity(star, phases)[0] * conversion
+    calc = radial_velocity(star, phases)[0] * conversion
     np.testing.assert_allclose(calc, expected, atol=1e-4)
